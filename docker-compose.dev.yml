@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   backend:
     image: mcr.microsoft.com/dotnet/sdk:9.0
@@ -38,6 +37,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
 
   qdrant:
     image: qdrant/qdrant:latest
