@@ -1,0 +1,23 @@
+Users(id PK, email UNIQUE, password_hash, user_type)
+
+Clients(user_id PK FK -> Users.id, address)
+
+Lawyers(user_id PK FK -> Users.id, description, photo)
+
+Admins(user_id PK FK -> Users.id)
+
+Processes(id PK, client_id FK -> Clients.user_id, lawyer_id FK -> Lawyers.user_id, 
+          description, created_at, closed_at, steps_count, current_step)
+
+Documents(id PK, process_id FK -> Processes.id, file_path, is_read)
+
+Appointments(id PK, client_id FK -> Clients.user_id, lawyer_id FK -> Lawyers.user_id, 
+             process_id FK -> Processes.id, scheduled_at)
+
+Notifications(id PK, process_id FK -> Processes.id, client_id FK -> Clients.user_id, content)
+
+Chats(id PK, client_id FK -> Clients.user_id, lawyer_id FK -> Lawyers.user_id)
+      UNIQUE(client_id, lawyer_id)
+
+Messages(id PK, chat_id FK -> Chats.id, sender_id FK -> Users.id, 
+         receiver_id FK -> Users.id, content, sent_at)
