@@ -35,9 +35,12 @@ CREATE TABLE Clients (
 -- Create Lawyers table
 CREATE TABLE Lawyers (
     user_id UUID PRIMARY KEY,
+    nif VARCHAR(9) NOT NULL,
     description TEXT,
     photo TEXT,
-    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
+    CONSTRAINT nif_format CHECK (nif ~ '^[0-9]{9}$'),
+    CONSTRAINT uniq_lawyer_nif UNIQUE (nif)
 );
 
 -- Create Admins table
@@ -148,6 +151,7 @@ CREATE INDEX idx_messages_sent ON Messages(sent_at);
 COMMENT ON TABLE Users IS 'Base table for all system users';
 COMMENT ON TABLE Clients IS 'Client-specific user information';
 COMMENT ON TABLE Lawyers IS 'Lawyer-specific user information';
+COMMENT ON COLUMN Lawyers.nif IS 'Portuguese NIF (Número de Identificação Fiscal), 9 numeric digits, unique';
 COMMENT ON TABLE Admins IS 'Admin-specific user information';
 COMMENT ON TABLE Processes IS 'Legal processes/cases managed in the system';
 COMMENT ON TABLE Documents IS 'Documents associated with processes';

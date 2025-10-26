@@ -47,7 +47,7 @@ build-prod:
 up-dev:
 	$(COMPOSE) -f $(DEV_FILE) up -d
 
-run-dev: up-dev
+run-dev: build-dev up-dev
 	@echo "Dev environment running with hot reload."
 	@echo "Backend: http://localhost:8080"
 	@echo "Frontend: http://localhost:4200"
@@ -56,7 +56,7 @@ run-dev: up-dev
 up-prod:
 	$(COMPOSE) -f $(PROD_FILE) up -d
 
-run-prod: build-prod logs-prod
+run-prod: build-prod up-prod
 	@echo "Prod environment running."
 	@echo "Frontend: http://localhost:4200"
 	@echo "Backend: http://localhost:8080"

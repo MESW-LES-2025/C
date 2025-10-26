@@ -23,10 +23,10 @@ INSERT INTO Clients (user_id, address) VALUES
     ('c0000000-0000-0000-0000-000000000003', 'Praça do Comércio, 789, Coimbra, Portugal');
 
 -- Insert lawyers with descriptions and photos
-INSERT INTO Lawyers (user_id, description, photo) VALUES
-    ('10000000-0000-0000-0000-000000000001', 'Specialized in civil law with 15 years of experience. Expert in contract disputes and family law.', 'https://i.pravatar.cc/150?img=1'),
-    ('10000000-0000-0000-0000-000000000002', 'Criminal defense attorney with focus on white-collar crimes and corporate law. 10 years of practice.', 'https://i.pravatar.cc/150?img=2'),
-    ('10000000-0000-0000-0000-000000000003', 'Labor law specialist with extensive experience in workplace disputes and employment contracts.', 'https://i.pravatar.cc/150?img=3');
+INSERT INTO Lawyers (user_id, nif, description, photo) VALUES
+    ('10000000-0000-0000-0000-000000000001', '123456789', 'Specialized in civil law with 15 years of experience. Expert in contract disputes and family law.', 'https://i.pravatar.cc/150?img=1'),
+    ('10000000-0000-0000-0000-000000000002', '245613579', 'Criminal defense attorney with focus on white-collar crimes and corporate law. 10 years of practice.', 'https://i.pravatar.cc/150?img=2'),
+    ('10000000-0000-0000-0000-000000000003', '987654321', 'Labor law specialist with extensive experience in workplace disputes and employment contracts.', 'https://i.pravatar.cc/150?img=3');
 
 -- Insert legal processes
 INSERT INTO Processes (id, client_id, lawyer_id, description, created_at, steps_count, current_step) VALUES
