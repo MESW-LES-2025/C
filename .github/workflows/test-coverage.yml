@@ -72,20 +72,3 @@ jobs:
         name: coverage-report
         path: ./coverage-report
         retention-days: 30
-    
-    - name: Comment coverage on PR
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          const summary = fs.readFileSync('./coverage-report/Summary.txt', 'utf8');
-          
-          const comment = `## 📊 Test Coverage Report\n\n\`\`\`\n${summary}\n\`\`\`\n\n*Coverage threshold: 75% (excluding API and Domain layers)*`;
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
