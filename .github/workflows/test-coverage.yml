@@ -26,19 +26,18 @@ jobs:
     
     - name: Run tests with coverage
       run: |
-        dotnet test \
-          --no-build \
+        dotnet test ./src/Consilium.Tests/Consilium.Tests.csproj \
           --configuration Release \
           --collect:"XPlat Code Coverage" \
-          --results-directory ./coverage \
-          ./src/Consilium.Tests/Consilium.Tests.csproj
+          --results-directory ./TestResults \
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
     
     - name: Debug - List coverage files
       run: |
-        echo "Contents of ./coverage directory:"
-        ls -la ./coverage || echo "Coverage directory not found"
+        echo "Contents of ./TestResults directory:"
+        ls -laR ./TestResults || echo "TestResults directory not found"
         echo "Searching for coverage files:"
-        find ./coverage -name "*.xml" -o -name "*.cobertura.xml" || echo "No XML files found"
+        find . -name "*.xml" -o -name "*.cobertura.xml" 2>/dev/null || echo "No XML files found"
     
     - name: Install ReportGenerator
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
@@ -46,7 +45,7 @@ jobs:
     - name: Generate coverage report
       run: |
         reportgenerator \
-          -reports:"./coverage/**/coverage.cobertura.xml" \
+          -reports:"./TestResults/**/coverage.cobertura.xml" \
           -targetdir:"./coverage-report" \
           -reporttypes:"Html;TextSummary" \
           -assemblyfilters:"-Consilium.API;-Consilium.Domain"
