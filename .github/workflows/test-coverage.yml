@@ -33,6 +33,13 @@ jobs:
           --results-directory ./coverage \
           ./src/Consilium.Tests/Consilium.Tests.csproj
     
+    - name: Debug - List coverage files
+      run: |
+        echo "Contents of ./coverage directory:"
+        ls -la ./coverage || echo "Coverage directory not found"
+        echo "Searching for coverage files:"
+        find ./coverage -name "*.xml" -o -name "*.cobertura.xml" || echo "No XML files found"
+    
     - name: Install ReportGenerator
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
     
