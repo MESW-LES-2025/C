@@ -19,12 +19,10 @@ jobs:
         dotnet-version: '9.0.x'
     
     - name: Restore dependencies
-      run: dotnet restore
-      working-directory: ./src
+      run: dotnet restore C.sln
     
     - name: Build
-      run: dotnet build --no-restore --configuration Release
-      working-directory: ./src
+      run: dotnet build C.sln --no-restore --configuration Release
     
     - name: Run tests with coverage
       run: |
@@ -33,8 +31,7 @@ jobs:
           --configuration Release \
           --collect:"XPlat Code Coverage" \
           --results-directory ./coverage \
-          ./Consilium.Tests/Consilium.Tests.csproj
-      working-directory: ./src
+          ./src/Consilium.Tests/Consilium.Tests.csproj
     
     - name: Install ReportGenerator
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
