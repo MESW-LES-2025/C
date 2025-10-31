@@ -39,7 +39,7 @@ jobs:
     - name: Generate coverage report
       run: |
         reportgenerator \
-          -reports:"./src/coverage/**/coverage.cobertura.xml" \
+          -reports:"./coverage/**/coverage.cobertura.xml" \
           -targetdir:"./coverage-report" \
           -reporttypes:"Html;TextSummary" \
           -assemblyfilters:"-Consilium.API;-Consilium.Domain"
