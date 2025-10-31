@@ -64,11 +64,11 @@ jobs:
         # Check if coverage meets minimum threshold
         threshold=75.0
         if (( $(echo "$coverage < $threshold" | bc -l) )); then
-          echo "❌ Coverage ${coverage}% is below threshold ${threshold}%"
+          echo "Coverage ${coverage}% is below threshold ${threshold}%"
           echo "::error title=Coverage Below Threshold::Coverage is ${coverage}%, minimum required is ${threshold}%"
           exit 1
         else
-          echo "✅ Coverage ${coverage}% meets threshold ${threshold}%"
+          echo "Coverage ${coverage}% meets threshold ${threshold}%"
           echo "::notice title=Coverage Check Passed::Coverage is ${coverage}%, above minimum ${threshold}%"
         fi
     
