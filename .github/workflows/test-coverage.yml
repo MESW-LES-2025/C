@@ -27,8 +27,14 @@ jobs:
       working-directory: ./src
     
     - name: Run tests with coverage
-      run: dotnet test --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
-      working-directory: ./src/Consilium.Tests
+      run: |
+        dotnet test \
+          --no-build \
+          --configuration Release \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./coverage \
+          ./Consilium.Tests/Consilium.Tests.csproj
+      working-directory: ./src
     
     - name: Install ReportGenerator
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
@@ -36,7 +42,7 @@ jobs:
     - name: Generate coverage report
       run: |
         reportgenerator \
-          -reports:"./src/Consilium.Tests/coverage/**/coverage.cobertura.xml" \
+          -reports:"./src/coverage/**/coverage.cobertura.xml" \
           -targetdir:"./coverage-report" \
           -reporttypes:"Html;TextSummary" \
           -assemblyfilters:"-Consilium.API;-Consilium.Domain"
