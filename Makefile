@@ -28,6 +28,8 @@ help:
 	@echo "  status              Check status of all services"
 	@echo "  status-dev          Check status of dev services"
 	@echo "  clean               Remove all containers"
+	@echo "  test                Run all unit tests"
+	@echo "  coverage            Run tests with coverage report"
 
 # ------------------------
 # Build
@@ -130,3 +132,31 @@ status-dev:
 	@curl -s http://localhost:6333/ | jq '.title' 2>/dev/null || echo "❌ Qdrant not responding"
 	@echo ""
 	@echo "✅ Dev status check complete"
+
+# ------------------------
+# Testing
+# ------------------------
+test:
+	@echo "🧪 Running all unit tests..."
+	dotnet test C.sln --configuration Release --verbosity minimal
+
+coverage:
+	@echo "📊 Running tests with coverage..."
+	@dotnet test ./src/Consilium.Tests/Consilium.Tests.csproj \
+		--configuration Release \
+		--collect:"XPlat Code Coverage" \
+		--results-directory ./src/Consilium.Tests/coverage \
+		--verbosity normal --nologo
+	@echo ""
+	@echo "📈 Generating coverage report..."
+	@reportgenerator \
+		-reports:"./src/Consilium.Tests/coverage/**/coverage.cobertura.xml" \
+		-targetdir:"./coverage-report" \
+		-reporttypes:"Html;TextSummary" \
+		-assemblyfilters:"-Consilium.API;-Consilium.Domain"
+	@echo ""
+	@echo "📄 Coverage Summary:"
+	@cat ./coverage-report/Summary.txt
+	@echo ""
+	@echo "✅ Coverage report generated at: ./coverage-report/index.html"
+	@echo "   Open with: open ./coverage-report/index.html"
