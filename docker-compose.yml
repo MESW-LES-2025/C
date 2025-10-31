@@ -2,20 +2,15 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile  # Production Dockerfile
       target: build-backend-prod
     ports:
       - "8080:8080"
-      - "8443:8443"
     # depends_on:
     #   - qdrant
-    volumes:
-      - ./certs:/https:ro
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=https://+:8443;http://+:8080
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=aspnetcore
+      - ASPNETCORE_URLS=http://+:8080
       #- Qdrant__Url=http://qdrant:6333
       - Logging__LogLevel__Default=Information
 

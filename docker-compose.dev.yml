@@ -2,20 +2,19 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: build-backend-prod
+      dockerfile: Dockerfile.dev
+      target: build-backend-dev
     ports:
       - "8080:8080"
-      - "8443:8443"
     # depends_on:
     #   - qdrant
     volumes:
-      - ./certs:/https:ro
+      - ./src:/src/src
+      - ./C.sln:/src/C.sln
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=https://+:8443;http://+:8080
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=aspnetcore
+      - ASPNETCORE_URLS=http://+:8080
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
       #- Qdrant__Url=http://qdrant:6333
       - Logging__LogLevel__Default=Debug
 
