@@ -42,6 +42,7 @@ qdrant_data/
 
 # Coverage reports
 coverage/
+coverage-report/
 *.cover
 .coverage
 .coverage.*

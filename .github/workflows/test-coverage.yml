@@ -1,0 +1,89 @@
+name: Unit Tests and Coverage
+
+on:
+  push:
+    branches: [ main, develop, task/** ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: ./src
+    
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+      working-directory: ./src
+    
+    - name: Run tests with coverage
+      run: dotnet test --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
+      working-directory: ./src/Consilium.Tests
+    
+    - name: Install ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+    
+    - name: Generate coverage report
+      run: |
+        reportgenerator \
+          -reports:"./src/Consilium.Tests/coverage/**/coverage.cobertura.xml" \
+          -targetdir:"./coverage-report" \
+          -reporttypes:"Html;TextSummary" \
+          -assemblyfilters:"-Consilium.API;-Consilium.Domain"
+    
+    - name: Display coverage summary
+      run: cat ./coverage-report/Summary.txt
+    
+    - name: Check coverage threshold
+      shell: bash
+      run: |
+        # Extract line coverage percentage (excluding API and Domain)
+        coverage=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage-report/Summary.txt | head -n 1)
+        echo "Coverage: ${coverage}%"
+        echo "COVERAGE=${coverage}" >> $GITHUB_ENV
+        
+        # Check if coverage meets minimum threshold
+        threshold=75.0
+        if (( $(echo "$coverage < $threshold" | bc -l) )); then
+          echo "❌ Coverage ${coverage}% is below threshold ${threshold}%"
+          echo "::error title=Coverage Below Threshold::Coverage is ${coverage}%, minimum required is ${threshold}%"
+          exit 1
+        else
+          echo "✅ Coverage ${coverage}% meets threshold ${threshold}%"
+          echo "::notice title=Coverage Check Passed::Coverage is ${coverage}%, above minimum ${threshold}%"
+        fi
+    
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: ./coverage-report
+        retention-days: 30
+    
+    - name: Comment coverage on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const summary = fs.readFileSync('./coverage-report/Summary.txt', 'utf8');
+          
+          const comment = `## 📊 Test Coverage Report\n\n\`\`\`\n${summary}\n\`\`\`\n\n*Coverage threshold: 75% (excluding API and Domain layers)*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
