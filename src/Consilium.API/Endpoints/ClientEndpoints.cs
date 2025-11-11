@@ -2,6 +2,7 @@ using Consilium.Application.Interfaces;
 using Consilium.Domain.Models;
 using Consilium.Domain.Enums;
 using Consilium.API.Dtos;
+using Consilium.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Consilium.API.Endpoints;
@@ -99,7 +100,8 @@ public static class ClientEndpoints
     private static async Task<IResult> CreateClient(
         CreateClientRequest request,
         IClientRepository repo,
-        IPasswordHasher hasher)
+        IPasswordHasher hasher,
+        AuditLogFacade auditLog)
     {
         // Validate input
         if (string.IsNullOrWhiteSpace(request.Email))
@@ -146,6 +148,9 @@ public static class ClientEndpoints
         // Save to database
         var newClient = await repo.Create(user, client);
 
+        // Log the creation - use the newClient's user ID as both the affected and created by user
+        await auditLog.AddCreateClientLogAsync(newClient.ID, newClient.ID);
+
         // Prepare response (include main phone if present)
         var createdMainPhone = newClient.User?.Phones?.FirstOrDefault(p => p.IsMain == true);
         var createdPhoneStr = createdMainPhone != null ? createdMainPhone.Number : string.Empty;
@@ -164,11 +169,13 @@ public static class ClientEndpoints
         return Results.Created($"/api/clients/{newClient.ID}", response);
     }
 
-    private static async Task<IResult> DeleteClient(Guid id, IClientRepository repo)
+    private static async Task<IResult> DeleteClient(Guid id, IClientRepository repo, AuditLogFacade auditLog)
     {
         try
         {
             await repo.Delete(id);
+            // Log the deletion - use the client ID as both affected and deleted by
+            await auditLog.AddDeleteClientLogAsync(id, id);
             return Results.NoContent();
         }
         catch (KeyNotFoundException)
@@ -185,7 +192,8 @@ public static class ClientEndpoints
         Guid id,
         UpdateClientRequest request,
         IClientRepository repo,
-        IPasswordHasher hasher)
+        IPasswordHasher hasher,
+        AuditLogFacade auditLog)
     {
         // Validate input - at least one field should be provided
         if (string.IsNullOrWhiteSpace(request.Name) && 
@@ -233,10 +241,29 @@ public static class ClientEndpoints
         };
 
         // Update in the repository
-    var updatedClient = await repo.UpdateClientAndUser(id, clientUpdates, userUpdates, request.IsActive);
+        var updatedClient = await repo.UpdateClientAndUser(id, clientUpdates, userUpdates, request.IsActive);
 
         if (updatedClient == null)
             return Results.NotFound(new { message = $"Client with ID {id} not found" });
+
+        // Log the update
+        var oldValues = new Dictionary<string, object?>
+        {
+            { "email", request.Email },
+            { "name", request.Name },
+            { "address", request.Address },
+            { "nif", request.NIF },
+            { "isActive", request.IsActive }
+        };
+        var newValues = new Dictionary<string, object?>
+        {
+            { "email", updatedClient.User?.Email },
+            { "name", updatedClient.User?.Name },
+            { "address", updatedClient.Address },
+            { "nif", updatedClient.User?.NIF },
+            { "isActive", updatedClient.User?.IsActive }
+        };
+        await auditLog.AddUpdateClientLogAsync(id, id, oldValues, newValues);
 
         // Prepare response (include main phone if present)
         var updatedMainPhone = updatedClient.User?.Phones?.FirstOrDefault(p => p.IsMain == true);

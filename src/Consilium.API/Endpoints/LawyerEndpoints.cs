@@ -2,6 +2,7 @@ using Consilium.Application.Interfaces;
 using Consilium.Domain.Models;
 using Consilium.Domain.Enums;
 using Consilium.API.Dtos;
+using Consilium.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Consilium.API.Endpoints;
@@ -98,7 +99,8 @@ public static class LawyerEndpoints
     private static async Task<IResult> CreateLawyer(
         CreateLawyerRequest request,
         ILawyerRepository repo,
-        IPasswordHasher hasher)
+        IPasswordHasher hasher,
+        AuditLogFacade auditLog)
     {
         // Validate input
         if (string.IsNullOrWhiteSpace(request.Email))
@@ -148,6 +150,9 @@ public static class LawyerEndpoints
         // Save to database
         var newLawyer = await repo.Create(user, lawyer);
 
+        // Log the creation
+        await auditLog.AddCreateLawyerLogAsync(newLawyer.ID, newLawyer.ID);
+
         // Prepare response (include main phone if present)
         var createdMainPhone = newLawyer.User?.Phones?.FirstOrDefault(p => p.IsMain == true);
         var createdPhoneStr = createdMainPhone != null ? createdMainPhone.Number : string.Empty;
@@ -166,11 +171,13 @@ public static class LawyerEndpoints
         return Results.Created($"/api/lawyers/{newLawyer.ID}", response);
     }
 
-    private static async Task<IResult> DeleteLawyer(Guid id, ILawyerRepository repo)
+    private static async Task<IResult> DeleteLawyer(Guid id, ILawyerRepository repo, AuditLogFacade auditLog)
     {
         try
         {
             await repo.Delete(id);
+            // Log the deletion
+            await auditLog.AddDeleteLawyerLogAsync(id, id);
             return Results.NoContent();
         }
         catch (KeyNotFoundException)
@@ -187,7 +194,8 @@ public static class LawyerEndpoints
         Guid id,
         UpdateLawyerRequest request,
         ILawyerRepository repo,
-        IPasswordHasher hasher)
+        IPasswordHasher hasher,
+        AuditLogFacade auditLog)
     {
         // Validate input - at least one field should be provided
         if (string.IsNullOrWhiteSpace(request.Name) && 
@@ -230,6 +238,21 @@ public static class LawyerEndpoints
 
         if (updatedLawyer == null)
             return Results.NotFound(new { message = $"Lawyer with ID {id} not found" });
+
+        // Log the update
+        var oldValues = new Dictionary<string, object?>
+        {
+            { "email", request.Email },
+            { "name", request.Name },
+            { "professionalRegister", request.ProfessionalRegister }
+        };
+        var newValues = new Dictionary<string, object?>
+        {
+            { "email", updatedLawyer.User?.Email },
+            { "name", updatedLawyer.User?.Name },
+            { "professionalRegister", updatedLawyer.ProfessionalRegister }
+        };
+        await auditLog.AddUpdateLawyerLogAsync(id, id, oldValues, newValues);
 
         // Prepare response (include main phone if present)
         var updatedMainPhone = updatedLawyer.User?.Phones?.FirstOrDefault(p => p.IsMain == true);

@@ -2,6 +2,7 @@ using Consilium.Application.Interfaces;
 using Consilium.Domain.Models;
 using Consilium.Domain.Enums;
 using Consilium.API.Dtos;
+using Consilium.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Consilium.API.Endpoints;
@@ -137,7 +138,8 @@ public static class AdminEndpoints
     private static async Task<IResult> CreateAdmin(
         CreateAdminRequest request,
         IAdminRepository repo,
-        IPasswordHasher hasher)
+        IPasswordHasher hasher,
+        AuditLogFacade auditLog)
     {
         // Validate input
         if (string.IsNullOrWhiteSpace(request.Email))
@@ -184,6 +186,9 @@ public static class AdminEndpoints
         // Save to database
         var newAdmin = await repo.Create(user, admin);
 
+        // Log the creation
+        await auditLog.AddCreateAdminLogAsync(newAdmin.ID, newAdmin.ID);
+
         // Prepare response (include main phone if present)
         var createdMainPhone = newAdmin.User?.Phones?.FirstOrDefault(p => p.IsMain == true);
         var createdPhoneStr = createdMainPhone != null ? createdMainPhone.Number : string.Empty;
@@ -202,11 +207,13 @@ public static class AdminEndpoints
         return Results.Created($"/api/admins/{newAdmin.ID}", response);
     }
 
-    private static async Task<IResult> DeleteAdmin(Guid id, IAdminRepository repo)
+    private static async Task<IResult> DeleteAdmin(Guid id, IAdminRepository repo, AuditLogFacade auditLog)
     {
         try
         {
             await repo.Delete(id);
+            // Log the deletion
+            await auditLog.AddDeleteAdminLogAsync(id, id);
             return Results.NoContent();
         }
         catch (KeyNotFoundException)
@@ -223,7 +230,8 @@ public static class AdminEndpoints
         Guid id,
         UpdateAdminRequest request,
         IAdminRepository repo,
-        IPasswordHasher hasher)
+        IPasswordHasher hasher,
+        AuditLogFacade auditLog)
     {
         // Validate input - at least one field should be provided
         if (string.IsNullOrWhiteSpace(request.Name) && 
@@ -262,6 +270,19 @@ public static class AdminEndpoints
 
         if (updatedAdmin == null)
             return Results.NotFound(new { message = $"Admin with ID {id} not found" });
+
+        // Log the update
+        var oldValues = new Dictionary<string, object?>
+        {
+            { "email", request.Email },
+            { "name", request.Name }
+        };
+        var newValues = new Dictionary<string, object?>
+        {
+            { "email", updatedAdmin.User?.Email },
+            { "name", updatedAdmin.User?.Name }
+        };
+        await auditLog.AddUpdateAdminLogAsync(id, id, oldValues, newValues);
 
         // Prepare response (include main phone if present)
         var updatedMainPhone = updatedAdmin.User?.Phones?.FirstOrDefault(p => p.IsMain == true);
