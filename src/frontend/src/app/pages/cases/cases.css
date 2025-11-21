@@ -1,3 +1,45 @@
-.page {
-	padding: var(--page-inner-padding);
+.cases-overview-card {
+  background: #fff;
+  padding: 20px 26px; 
+  border: 1.5px solid #f1f5f9;
+  border-radius: 20px;
+  box-shadow: none;
+  width: fit-content;
+}
+
+.overview-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.overview-body {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.overview-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.overview-number {
+  font-weight: 800;
+  color: #111827;
+  font-size: 20px;
+}
+
+.overview-label {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.divider {
+  width: 1px;
+  height: 32px;
+  background: #ddd;
 }
