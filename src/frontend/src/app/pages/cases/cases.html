@@ -47,17 +47,18 @@
       <div class="divider"></div>
 
       <div class="client-info">
+        <div class="client-main">
+          <div class="client-left">
+            <p class="client-name">{{ client.name }}</p>
+            <p class="client-location">Porto, Portugal</p>
+          </div>
 
-        <div class="client-left">
-          <p class="client-name">{{ client.name }}</p>
-          <p class="client-location"> Porto, Portugal</p>
-          <button class="contact-btn">Contact</button>
+          <div class="client-avatar">
+            <span>{{ getInitials(client.name) }}</span>
+          </div>
         </div>
 
-        <div class="client-avatar">
-          <span>{{ getInitials(client.name) }}</span>
-        </div>
-
+        <button class="contact-btn">Contact</button>
       </div>
 
 

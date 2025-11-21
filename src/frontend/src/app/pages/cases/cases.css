@@ -241,18 +241,10 @@
 
 .client-info {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  width: 25%;
-  gap: 16px;
-}
-
-/* Left side: name + location + button */
-.client-left {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  flex-direction: column; /* stack main row and button */
+  align-items: flex-start; /* change to center if you want button centered under avatar */
+  gap: 12px;
+  width: 20%;
 }
 
 .client-name {
@@ -264,33 +256,19 @@
 
 .client-location {
   font-size: 13px;
-  color: #9ca3af;    /* Light grey */
+  color: #9ca3af;
   margin: 0;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-/* Contact Button */
-.contact-btn {
-  margin-top: 12px;
-  padding: 8px 20px;
-  border-radius: 12px;
-  border: 2px solid #a4161a;
-  background: transparent;
-  color: #a4161a;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.client-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.contact-btn:hover {
-  background: #a4161a;
-  color: #fff;
-}
-
-/* Avatar on the right */
 .client-avatar {
   width: 80px;
   height: 80px;
@@ -299,10 +277,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
   font-size: 20px;
+  font-weight: 700;
   color: #0a2540;
-  overflow: hidden;
+}
+
+.contact-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #FFF;
+  color: #A30E25;
+  border: 2px solid #A30E25;
+  cursor: pointer;
+  align-self: flex-start;
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .client-main { gap: 8px; }
+  .client-avatar { width: 40px; height: 40px; }
 }
 
 
