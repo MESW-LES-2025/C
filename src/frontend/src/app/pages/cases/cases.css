@@ -38,9 +38,15 @@
   margin-top: 4px;
 }
 
+.divider-overview {
+  width: 1px;
+  height: 30px;
+  background: #ddd;
+}
+
 .divider {
   width: 1px;
-  height: 32px;
+  height: 100px;
   background: #ddd;
 }
 
@@ -48,7 +54,6 @@
   margin-top: 24px;
 }
 
-/* Reuse exact same styles as clients */
 .search-box {
   position: relative;
   display: inline-block;
@@ -124,4 +129,180 @@
 .cases-toolbar .search-box {
   margin-bottom: 0;
 }
+
+.case-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+}
+
+.case-header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  align-items: center;
+}
+
+.case-info {
+  flex: 1;
+  width: 80%;
+}
+
+.case-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.case-description {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.case-location {
+  font-size: 14px;
+  color: #a4161a;;
+  font-style: italic;
+  margin-top: 8px;
+}
+
+.contact-button {
+  padding: 10px 20px;
+  background-color: #a4161a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.contact-button:hover {
+  background-color: #8c1418;
+}
+
+.case-steps {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.step {
+  font-size: 14px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.step.completed {
+  color: #a4161a; 
+  font-weight: 600;
+}
+
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.pagination button {
+  background: #f3f4f6;
+  border: 2px solid #d1d5db;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: #a4161a;
+  color: white;
+  border-color: #a4161a;
+}
+
+.pagination button:disabled {
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+}
+
+
+.client-info {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 25%;
+  gap: 16px;
+}
+
+/* Left side: name + location + button */
+.client-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.client-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.client-location {
+  font-size: 13px;
+  color: #9ca3af;    /* Light grey */
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Contact Button */
+.contact-btn {
+  margin-top: 12px;
+  padding: 8px 20px;
+  border-radius: 12px;
+  border: 2px solid #a4161a;
+  background: transparent;
+  color: #a4161a;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.contact-btn:hover {
+  background: #a4161a;
+  color: #fff;
+}
+
+/* Avatar on the right */
+.client-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  background: #e9eef6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 20px;
+  color: #0a2540;
+  overflow: hidden;
+}
+
 
