@@ -113,12 +113,15 @@
 
 .cases-toolbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin: 24px 0;
+  justify-content: space-between;
   gap: 12px;
+  height: 56px;
+  margin: 12px 0;
+  box-sizing: border-box;
 }
 
 .cases-toolbar .search-box {
-  flex-shrink: 0;
+  margin-bottom: 0;
 }
+
