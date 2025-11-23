@@ -15,14 +15,69 @@ export class PaginationComponent {
   @Output() pageChange = new EventEmitter<number>();
 
   get pages(): (number | 'dots')[] {
-    if (this.totalPages <= 5) {
-      // If few pages, show all
-      return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+    const pages: (number | 'dots')[] = [];
+
+    const first = 1;
+    const last = this.totalPages;
+
+    if (this.totalPages <= 7) {
+        return Array.from({ length: this.totalPages }, (_, i) => i + 1);
     }
 
-    // Always show: 1 2 3 4 … last
-    return [1, 2, 3, 4, 'dots', this.totalPages];
+    if (this.currentPage <= 3) {
+        return [1, 2, 3, 4, 5, 'dots', last];
+    }
+
+  if (this.currentPage >= last - 2) {
+    return [
+      first,
+      'dots',
+      last - 4,
+      last - 3,
+      last - 2,
+      last - 1,
+      last
+    ];
   }
+
+  const before2 = this.currentPage - 2;
+  const before1 = this.currentPage - 1;
+  const after1 = this.currentPage + 1;
+
+  pages.push(first);
+
+  let leftHandled = false;
+
+  if (before2 > 2) {
+    pages.push('dots');
+    leftHandled = true;
+  } else if (before2 === 2) {
+    pages.push(2);
+    leftHandled = true;
+  }
+
+  const middleCandidates = [before2, before1, this.currentPage, after1];
+
+  for (const p of middleCandidates) {
+    if (p > first && p < last) {
+      if (!pages.includes(p)) {
+        pages.push(p);
+      }
+    }
+  }
+
+  if (after1 < last - 1) {
+    pages.push('dots');
+  } else if (after1 === last - 1) {
+    pages.push(last - 1);
+  }
+
+  pages.push(last);
+
+  return pages;
+}
+
+
 
   goToPage(page: number | 'dots') {
     if (typeof page === 'number') {

@@ -19,7 +19,7 @@
   align-items: center;
 }
 
-.pagination-button-first {
+.pagination-button-previous {
   margin-right: auto;
   font-size: 14px;
   color: #737373;
@@ -28,7 +28,25 @@
   font-weight: bold;
 }
 
-.pagination-button-last {
+.pagination-button-next:hover:not(.disabled) {
+  color: #c9c4c4;
+}
+
+.pagination-button-previous:hover:not(.disabled) {
+  color: #c9c4c4;
+}
+
+.pagination-button-next.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-button-previous.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-button-next {
   margin-left: auto;
   font-size: 14px;
   color: #737373;
