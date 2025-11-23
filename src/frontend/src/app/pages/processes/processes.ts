@@ -3,13 +3,14 @@ import { ButtonComponent } from '../../shared/button/button';
 import { PageTitleComponent } from '../../shared/page-title/page-title';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { PaginationComponent } from '../../shared/pagination/pagination';
 
 @Component({
   selector: 'app-processes',
   standalone: true,
   templateUrl: './processes.html',
   styleUrls: ['./processes.css'],
-  imports: [PageTitleComponent, ButtonComponent, FormsModule, CommonModule]
+  imports: [PageTitleComponent, ButtonComponent, FormsModule, CommonModule, PaginationComponent]
 })
 export class ProcessesComponent {
   processes = [
@@ -43,7 +44,7 @@ export class ProcessesComponent {
   ];
 
   currentPage = 1;
-  totalPages = 1;
+  totalPages = 6;
   goToPageNumber = 1;
 
   goToPage(page: number) {

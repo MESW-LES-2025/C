@@ -67,29 +67,11 @@
   </section>
 
 
-
-  <div class="pagination">
-    <button disabled>First</button>
-    <button disabled>Previous</button>
-
-    <span>Page {{ currentPage }} of {{ totalPages }}</span>
-
-    <span>
-      Go to:
-      <input
-        type="number"
-        min="1"
-        [max]="totalPages"
-        [(ngModel)]="goToPageNumber"
-        class="goto-input"
-        disabled
-      />
-      <button disabled>Go</button>
-    </span>
-
-    <button disabled>Next</button>
-    <button disabled>Last</button>
-  </div>
+  <app-pagination
+    [currentPage]="currentPage"
+    [totalPages]="totalPages"
+    (pageChange)="goToPage($event)"
+  ></app-pagination>
 
 
 </section>
