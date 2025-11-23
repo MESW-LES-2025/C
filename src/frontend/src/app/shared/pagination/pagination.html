@@ -1,7 +1,7 @@
 <div class="pagination-container">
   <div class="pagination-buttons">
     <button
-      class="pagination-button"
+      class="pagination-button-first"
       [class.disabled]="currentPage === 1"
       (click)="goToPage(1)">
       First
@@ -15,12 +15,20 @@
     </button>
 
     <ng-container *ngFor="let page of pages">
-      <button
+
+        <!-- Dots -->
+        <span *ngIf="page === 'dots'" class="dots">…</span>
+
+        <!-- Page number -->
+        <button
+        *ngIf="page !== 'dots'"
         class="pagination-button"
         [class.active]="page === currentPage"
-        (click)="goToPage(page)">
+        (click)="goToPage(page)"
+        >
         {{ page }}
-      </button>
+        </button>
+
     </ng-container>
 
     <button
@@ -31,10 +39,11 @@
     </button>
 
     <button
-      class="pagination-button"
+      class="pagination-button-last"
       [class.disabled]="currentPage === totalPages"
       (click)="goToPage(totalPages)">
       Last
     </button>
   </div>
 </div>
+

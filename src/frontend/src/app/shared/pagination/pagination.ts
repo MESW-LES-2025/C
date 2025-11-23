@@ -14,12 +14,18 @@ export class PaginationComponent {
 
   @Output() pageChange = new EventEmitter<number>();
 
-  get pages(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  get pages(): (number | 'dots')[] {
+    if (this.totalPages <= 5) {
+      // If few pages, show all
+      return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+    }
+
+    // Always show: 1 2 3 4 … last
+    return [1, 2, 3, 4, 'dots', this.totalPages];
   }
 
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages) {
+  goToPage(page: number | 'dots') {
+    if (typeof page === 'number') {
       this.pageChange.emit(page);
     }
   }

@@ -6,17 +6,35 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  max-width: 40%;
+  max-width: 50%;
   margin: 0 auto;
   box-sizing: border-box;
 }
 
 .pagination-buttons {
   display: flex;
-  justify-content: center;
+  align-items: center;
   gap: 12px;
   width: 100%;
   align-items: center;
+}
+
+.pagination-button-first {
+  margin-right: auto;
+  font-size: 14px;
+  color: #737373;
+  background: transparent;
+  border: none;
+  font-weight: bold;
+}
+
+.pagination-button-last {
+  margin-left: auto;
+  font-size: 14px;
+  color: #737373;
+  background: transparent;
+  border: none;
+  font-weight: bold;
 }
 
 .pagination-button {
