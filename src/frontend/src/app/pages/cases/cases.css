@@ -50,10 +50,6 @@
   background: #ddd;
 }
 
-.cases-search {
-  margin-top: 24px;
-}
-
 .search-box {
   position: relative;
   display: inline-block;
@@ -146,6 +142,7 @@
   justify-content: space-between;
   width: 100%;
   align-items: center;
+  gap: 30px;
 }
 
 .case-info {
@@ -172,38 +169,6 @@
   font-style: italic;
   margin-top: 8px;
 }
-
-.contact-button {
-  padding: 10px 20px;
-  background-color: #a4161a;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.contact-button:hover {
-  background-color: #8c1418;
-}
-
-.case-steps {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-}
-
-.step {
-  font-size: 14px;
-  color: #9ca3af;
-  text-align: center;
-}
-
-.step.completed {
-  color: #a4161a; 
-  font-weight: 600;
-}
-
 
 .pagination {
   display: flex;
@@ -238,11 +203,10 @@
   border-color: #e5e7eb;
 }
 
-
 .client-info {
   display: flex;
-  flex-direction: column; /* stack main row and button */
-  align-items: flex-start; /* change to center if you want button centered under avatar */
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
   width: 20%;
 }
@@ -265,7 +229,18 @@
 
 .client-main {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.client-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  min-width: 0;
   gap: 12px;
 }
 
@@ -280,6 +255,9 @@
   font-size: 20px;
   font-weight: 700;
   color: #0a2540;
+  margin-left: 12px;
+  flex: 0 0 auto;
+  align-self: flex-start;
 }
 
 .contact-btn {
@@ -291,9 +269,21 @@
   cursor: pointer;
   align-self: flex-start;
   width: 100%;
+  font-weight: 700;
 }
 
 @media (max-width: 720px) {
+  .search {
+    height: 40px;
+    padding-left: 52px;
+    font-size: 14px;
+  }
+  .search-icon {
+    left: 14px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
   .client-main { gap: 8px; }
   .client-avatar { width: 40px; height: 40px; }
 }
