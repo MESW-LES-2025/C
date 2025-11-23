@@ -6,7 +6,8 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  max-width: 50%;
+  width: fit-content;
+  max-width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
 }
@@ -17,15 +18,26 @@
   gap: 12px;
   width: 100%;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-.pagination-button-previous {
-  margin-right: auto;
+.pagination-button-previous,
+.pagination-button-next {
   font-size: 14px;
   color: #737373;
   background: transparent;
   border: none;
   font-weight: bold;
+  flex-shrink: 0;
+}
+
+.pagination-button-previous {
+  margin-right: 20px;
+}
+
+.pagination-button-next {
+  margin-left: 20px;
 }
 
 .pagination-button-next:hover:not(.disabled) {
@@ -46,14 +58,6 @@
   cursor: not-allowed;
 }
 
-.pagination-button-next {
-  margin-left: auto;
-  font-size: 14px;
-  color: #737373;
-  background: transparent;
-  border: none;
-  font-weight: bold;
-}
 
 .pagination-button {
   background: transparent;
@@ -72,7 +76,7 @@
 }
 
 .pagination-button.active {
-  background: #a4161a;     /* red */
+  background: #a4161a;
   color: white;
   font-weight: bold;
 }

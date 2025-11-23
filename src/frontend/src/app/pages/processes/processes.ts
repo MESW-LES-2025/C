@@ -44,7 +44,7 @@ export class ProcessesComponent {
   ];
 
   currentPage = 1;
-  totalPages = 30;
+  totalPages = 8;
   goToPageNumber = 1;
 
   goToPage(page: number) {
