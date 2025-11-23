@@ -167,7 +167,7 @@
   font-size: 14px;
   color: #a4161a;;
   font-style: italic;
-  margin-top: 8px;
+  align-items: flex-start;
 }
 
 .pagination {
