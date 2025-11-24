@@ -26,7 +26,7 @@
                         *ngFor="let doc of documents; let i = index"
                     >
                         <div class="attachment-icon">
-                        <span>W</span>
+                            <img [src]="getDocumentIcon(doc.name)" alt="file icon" />
                         </div>
 
                         <div class="attachment-info">

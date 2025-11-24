@@ -50,6 +50,21 @@ export class ProcessDetailsComponent implements OnDestroy {
     });
   }
 
+  getDocumentIcon(filename: string): string {
+    const ext = filename.toLowerCase();
+
+    if (ext.endsWith('.doc') || ext.endsWith('.docx')) {
+      return 'assets/doc-icons/docs-logo.png';
+    }
+
+    if (ext.endsWith('.pdf')) {
+      return 'assets/doc-icons/pdf-logo.png';
+    }
+
+    return 'assets/doc-icons/file-generic.png';
+  }
+
+
   loadProcess(id: string) {
     // later for API service, call the backend
 
