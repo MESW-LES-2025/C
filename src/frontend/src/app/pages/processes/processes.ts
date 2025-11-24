@@ -62,6 +62,6 @@ export class ProcessesComponent {
   }
 
   openProcess(id: number) {
-    this.router.navigate(['/processes', id]); // 👈 uses your /processes/:id route
+    this.router.navigate(['/processes', id]);
   }
 }
