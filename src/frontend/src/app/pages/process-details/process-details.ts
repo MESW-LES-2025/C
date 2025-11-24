@@ -21,6 +21,8 @@ export class ProcessDetailsComponent implements OnDestroy {
   title = 'Process Details';
   private sub!: Subscription;
 
+  process: any = null;
+
   constructor() {
     this.sub = this.route.paramMap.subscribe(params => {
       const id = params.get('id');
@@ -31,8 +33,31 @@ export class ProcessDetailsComponent implements OnDestroy {
       this.breadcrumbService.clearLabelOverride(url);
 
       this.breadcrumbService.setLabelOverride(url, 'Process Details');
+
+      this.sub = this.route.paramMap.subscribe(params => {
+        const id = params.get('id');
+        if (!id) return;
+
+        this.loadProcess(id);
+      });
+      
     });
   }
+
+  loadProcess(id: string) {
+    // later for API service, call the backend
+
+    this.process = {
+      clientName: 'Emily Collins',
+      clientLocation: 'Porto, Portugal'
+    };
+  }
+
+  getInitials(name: string): string {
+    const parts = name.split(' ').filter(Boolean);
+    return parts.map(p => p[0].toUpperCase()).slice(0, 2).join('');
+  }
+
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();

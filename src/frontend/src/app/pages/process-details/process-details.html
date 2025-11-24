@@ -8,18 +8,34 @@
 
     <main class="process-main">
         <section class="process-info">
-            <h2 class="process-title">Process Information</h2>
+            <h3 class="process-title">Process Information</h3>
         </section>
     </main>
 
 
     <aside class="process-side">
       <section class="card-client-card">
-        <h3>Client</h3>
-      </section>
+
+  <h3 class="client-title">Client</h3>
+
+  <div class="client-info">
+    <div class="client-main">
+        <div class="client-left">
+            <p class="client-name">{{ process.clientName }}</p>
+            <p class="client-location">{{ process.clientLocation }}</p>
+        </div>
+
+        <div class="client-avatar">
+            <span>{{ getInitials(process.clientName) }}</span>
+        </div>
+        </div>
+    </div>
+
+    </section>
+
 
       <section class="card-chat-card">
-        <h3>Chat</h3>
+        <h3 class="chat-title">Chat</h3>
       </section>
     </aside>
 
