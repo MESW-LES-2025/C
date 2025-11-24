@@ -1,0 +1,28 @@
+.process-grid {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr;
+  gap: 20px;
+  margin-top: 24px;
+  height: calc(100vh - 150px - 50px);
+}
+
+.process-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.process-info {
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 24px;
+  flex: 1;
+}
+
+.card-client-card,
+.card-chat-card {
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 24px;
+}

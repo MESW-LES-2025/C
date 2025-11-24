@@ -14,6 +14,7 @@ import { NgModule } from '@angular/core';
 import { EditClientComponent } from './pages/edit-client/edit-client';
 import { EditLawyerComponent } from './pages/edit-lawyer/edit-lawyer';
 import { ProcessesComponent } from './pages/processes/processes';
+import { ProcessDetailsComponent } from './pages/process-details/process-details';
 
 export const routes: Routes = [
 	{ path: '', component: LoginComponent, title: 'Login' },
@@ -26,6 +27,7 @@ export const routes: Routes = [
 	{ path: 'lawyers', component: LawyersComponent, title: 'Lawyers' },
 	{ path: 'chatbot', component: ChatbotComponent, title: 'ChatBot' },
 	{ path: 'processes', component: ProcessesComponent, title: 'Processes' },
+	{ path: 'processes/:id', component: ProcessDetailsComponent, title: 'Process Details' },
 	{ path: 'profiles', component: ProfilesComponent, title: 'Profiles' },
 	{ path: 'settings', component: SettingsComponent, title: 'Settings' },
 	{ path: 'create-client', component: CreateClientComponent, title: 'Create Client' },

@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { ButtonComponent } from '../../shared/button/button';
 import { PageTitleComponent } from '../../shared/page-title/page-title';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { PaginationComponent } from '../../shared/pagination/pagination';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-processes',
@@ -13,6 +14,8 @@ import { PaginationComponent } from '../../shared/pagination/pagination';
   imports: [PageTitleComponent, ButtonComponent, FormsModule, CommonModule, PaginationComponent]
 })
 export class ProcessesComponent {
+  private router = inject(Router);
+  
   processes = [
     {
       id: 1,
@@ -56,5 +59,9 @@ export class ProcessesComponent {
   getInitials(name: string): string {
     const parts = name.split(' ').filter(Boolean);
     return parts.map(p => p[0].toUpperCase()).slice(0, 2).join('');
+  }
+
+  openProcess(id: number) {
+    this.router.navigate(['/processes', id]); // 👈 uses your /processes/:id route
   }
 }

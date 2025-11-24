@@ -37,6 +37,7 @@
   <section
     class="case-details"
     *ngFor="let c of processes"
+    (click)="openProcess(c.id)"
   >
     <div class="case-header">
       <div class="case-info">
