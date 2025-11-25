@@ -24,13 +24,21 @@ namespace Consilium.Infrastructure.Data
         /*************************************************************************
         ************************** END OF CORE SCHEMA ENTITIES *******************
         *************************************************************************/
-        public DbSet<Process> Processes { get; set; }
+
+        /*************************************************************************
+        ************************** LEGAL SCHEMA ENTITIES **************************
+        *************************************************************************/
         public DbSet<Document> Documents { get; set; }
-        public DbSet<ProcessType> ProcessTypes { get; set; }
-        public DbSet<ProcessPhase> ProcessPhases { get; set; }
-        public DbSet<ProcessTypePhase> ProcessTypePhases { get; set; }
-        public DbSet<ProcessStatus> ProcessStatuses { get; set; }
+        public DbSet<Process> Processes { get; set; }
         public DbSet<ProcessLog> ProcessLogs { get; set; }
+        public DbSet<ProcessPhase> ProcessPhases { get; set; }
+        public DbSet<ProcessStatus> ProcessStatuses { get; set; }
+        public DbSet<ProcessType> ProcessTypes { get; set; }
+        public DbSet<ProcessTypePhase> ProcessTypePhases { get; set; }
+
+        /*************************************************************************
+        ************************** END OF LEGAL SCHEMA ENTITIES *******************
+        *************************************************************************/
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
