@@ -16,42 +16,41 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
 
-// 1. Configurações Globais
+// 1. Global Configurations
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurações de Ambiente
+// 2. Environment Configurations
 if (builder.Environment.IsDevelopment())
 {
     Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
 }
 
-// Previne o mapeamento automático de claims (mantém 'role' e 'username' como vêm do JSON)
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
-// 2. Variáveis de Configuração
+// 3. Connection String
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "ConsiliumSecretKeyForDevelopment_MustBeAtLeast32CharactersLong";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "https://localhost:8080";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "http://localhost:4200";
 
-// 3. Base de Dados (Ignora se for Teste)
+// 4. Database Connection (Ignored if Test)
 if (!builder.Environment.IsEnvironment("Test"))
 {
     builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 }
 
-// 4. Serialização JSON
+// 5. JSON Serialization
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
-// 5. Injeção de Dependência (Serviços e Repositórios)
+// 6. Dependency Injection (Services and Repositories)
 RegisterApplicationServices(builder.Services);
 
-// 6. Configuração de Autenticação (JWT)
+// 7. Authentication Configuration (JWT)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -59,10 +58,9 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false; // Mantido como pedido
+    options.RequireHttpsMetadata = false; 
     options.SaveToken = true;
     
-    // Parâmetros de validação
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -76,7 +74,6 @@ builder.Services.AddAuthentication(options =>
         NameClaimType = "username",   
     };
 
-    // Eventos de Log (Lógica movida para função auxiliar no fundo do ficheiro)
     options.Events = new JwtBearerEvents
     {
         OnAuthenticationFailed = LogAuthFailure,
@@ -84,7 +81,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 7. Configuração de Autorização
+// 8. Authorization Configuration
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOrLawyer", policy =>
@@ -97,7 +94,7 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser().RequireRole("Admin", "Lawyer", "Client"));
 });
 
-// 8. Swagger e Antiforgery
+// 9. Swagger and Antiforgery
 ConfigureSwagger(builder.Services);
 builder.Services.AddAntiforgery();
 builder.Services.AddCors(options =>
@@ -105,10 +102,9 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
-// --- BUILD DA APLICAÇÃO ---
 var app = builder.Build();
 
-// 9. Pipeline de Erros (Lógica movida para função auxiliar)
+// 9. Error Pipeline (Logic moved to auxiliary function)
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(HandleCustomExceptions);
@@ -141,8 +137,7 @@ app.MapLookupEndpoints();
 
 app.Run();
 
-// --- FUNÇÕES AUXILIARES (Para manter o topo limpo) ---
-
+// --- AUXILIARY FUNCTIONS ---
 void RegisterApplicationServices(IServiceCollection services)
 {
     services.AddScoped<IUserRepository, UserRepository>();
@@ -182,7 +177,6 @@ void ConfigureSwagger(IServiceCollection services)
     });
 }
 
-// Lógica de Logs de Autenticação (Extraída do AddJwtBearer)
 Task LogAuthFailure(AuthenticationFailedContext context)
 {
     var logger = context.HttpContext.RequestServices.GetService<ILogger<Program>>();
@@ -205,7 +199,6 @@ Task LogTokenSuccess(TokenValidatedContext context)
     return Task.CompletedTask;
 }
 
-// Lógica de Tratamento de Erros (Extraída do UseExceptionHandler)
 async Task HandleCustomExceptions(HttpContext context)
 {
     var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
