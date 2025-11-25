@@ -44,38 +44,12 @@ namespace Consilium.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Set default schema to core (lowercase)
+            /*************************************************************************
+             *************** SET DEFAULT SCHEMA TO CORE AND ITS TABLES ***************
+            *************************************************************************/
             modelBuilder.HasDefaultSchema("core");
 
-            // Configure User entity
-            modelBuilder.Entity<User>()
-                .HasKey(u => u.ID);
-
-            modelBuilder.Entity<User>()
-                .Property(u => u.IsActive)
-                .HasDefaultValue(true);
-
-            // Configure Client entity with 1:1 relationship to User
-            modelBuilder.Entity<Client>()
-                .HasKey(c => c.ID);
-
-            modelBuilder.Entity<Client>()
-                .HasOne(c => c.User)
-                .WithOne(u => u.Client)
-                .HasForeignKey<Client>(c => c.ID)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // Configure Lawyer entity with 1:1 relationship to User
-            modelBuilder.Entity<Lawyer>()
-                .HasKey(l => l.ID);
-
-            modelBuilder.Entity<Lawyer>()
-                .HasOne(l => l.User)
-                .WithOne(u => u.Lawyer)
-                .HasForeignKey<Lawyer>(l => l.ID)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // Configure Admin entity with 1:1 relationship to User
+            // ***************  ADMIN ENTITY *************** //
             modelBuilder.Entity<Admin>()
                 .HasKey(a => a.ID);
 
@@ -89,7 +63,37 @@ namespace Consilium.Infrastructure.Data
                 .Property(a => a.StartedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            // Configure Phone entity with 1:N relationship to User
+            // ***************  CLIENT ENTITY *************** //
+            modelBuilder.Entity<Client>()
+                .HasKey(c => c.ID);
+
+            modelBuilder.Entity<Client>()
+                .HasOne(c => c.User)
+                .WithOne(u => u.Client)
+                .HasForeignKey<Client>(c => c.ID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ***************  DOCUMENT ENTITY *************** //
+            modelBuilder.Entity<Document>()
+                .HasKey(d => d.Id);
+
+            modelBuilder.Entity<Document>()
+                .HasOne(d => d.Process)
+                .WithMany(p => p.Documents)
+                .HasForeignKey(d => d.ProcessId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ***************  LAWYER ENTITY *************** //
+            modelBuilder.Entity<Lawyer>()
+                .HasKey(l => l.ID);
+
+            modelBuilder.Entity<Lawyer>()
+                .HasOne(l => l.User)
+                .WithOne(u => u.Lawyer)
+                .HasForeignKey<Lawyer>(l => l.ID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ***************  PHONE ENTITY *************** //
             modelBuilder.Entity<Phone>()
                 .HasKey(p => p.ID);
 
@@ -103,17 +107,7 @@ namespace Consilium.Infrastructure.Data
                 .Property(p => p.CountryCode)
                 .HasDefaultValue((short)351);
 
-            // Configure Document entity in LEGAL schema and cascade delete when a Process is deleted
-            modelBuilder.Entity<Document>()
-                .HasKey(d => d.Id);
-
-            modelBuilder.Entity<Document>()
-                .HasOne(d => d.Process)
-                .WithMany(p => p.Documents)
-                .HasForeignKey(d => d.ProcessId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // Configure Process entity - CreatedAt should never be updated after creation
+            // ***************  PROCESS ENTITY *************** //
             modelBuilder.Entity<Process>()
                 .Property(p => p.CreatedAt)
                 .ValueGeneratedOnAdd();
@@ -121,6 +115,14 @@ namespace Consilium.Infrastructure.Data
             modelBuilder.Entity<Process>()
                 .Property(p => p.CreatedAt)
                 .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+            // ***************  USER ENTITY *************** //
+            modelBuilder.Entity<User>()
+                .HasKey(u => u.ID);
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.IsActive)
+                .HasDefaultValue(true);
         }
     }
 }
