@@ -103,12 +103,29 @@ namespace Consilium.Infrastructure.Data
 
             // LAWYER
             modelBuilder.Entity<Lawyer>()
-                .HasKey(l => l.ID);
+                .HasKey(l => l.ID)
+                .HasName("pk_lawyer");
+
+            modelBuilder.Entity<Lawyer>()
+                .Property(l => l.ID)
+                .HasColumnName("lawyer_id");
+
+            modelBuilder.Entity<Lawyer>()
+                .Property(l => l.ProfessionalRegister)
+                .HasColumnName("lawyer_professional_register")
+                .HasMaxLength(20)
+                .IsRequired();
+
+            // Unique constraint on professional register
+            modelBuilder.Entity<Lawyer>()
+                .HasAlternateKey(l => l.ProfessionalRegister)
+                .HasName("uk_lawyer_01_register");
 
             modelBuilder.Entity<Lawyer>()
                 .HasOne(l => l.User)
                 .WithOne(u => u.Lawyer)
                 .HasForeignKey<Lawyer>(l => l.ID)
+                .HasConstraintName("fk_lawyer_user_01")
                 .OnDelete(DeleteBehavior.Cascade);
 
             // PHONE
