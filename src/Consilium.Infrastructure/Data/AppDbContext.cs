@@ -58,7 +58,7 @@ namespace Consilium.Infrastructure.Data
 
             modelBuilder.HasDefaultSchema("core");
 
-            // ADMIN
+            // **************** ADMIN **************** //
             modelBuilder.Entity<Admin>()
                 .HasKey(a => a.ID)
                 // PK
@@ -81,7 +81,7 @@ namespace Consilium.Infrastructure.Data
                 .HasConstraintName("fk_admin_user_01")
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // CLIENT
+            // **************** CLIENT **************** //
             modelBuilder.Entity<Client>()
                 .HasKey(c => c.ID)
                 // PK
@@ -105,7 +105,7 @@ namespace Consilium.Infrastructure.Data
                 .HasConstraintName("fk_client_user_01")
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // LAWYER
+            // **************** LAWYER **************** //
             modelBuilder.Entity<Lawyer>()
                 .HasKey(l => l.ID)
                 // PK
@@ -134,7 +134,7 @@ namespace Consilium.Infrastructure.Data
                 .HasConstraintName("fk_lawyer_user_01")
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // PHONE
+            // **************** PHONE **************** //
             modelBuilder.Entity<Phone>()
                 .HasKey(p => p.ID)
                 // PK
@@ -181,13 +181,55 @@ namespace Consilium.Infrastructure.Data
                 .HasConstraintName("fk_phone_user_01")
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // USER
+            // **************** USER **************** //
             modelBuilder.Entity<User>()
-                .HasKey(u => u.ID);
+                .HasKey(u => u.ID)
+                // PK
+                .HasName("pk_user");
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.ID)
+                .HasColumnName("user_id");
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.Name)
+                .HasColumnName("user_name")
+                .HasMaxLength(254)
+                .IsRequired();
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.NIF)
+                .HasColumnName("user_nif")
+                .HasMaxLength(9)
+                .IsRequired();
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.Email)
+                .HasColumnName("user_email")
+                .HasMaxLength(254)
+                .IsRequired();
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.PasswordHash)
+                .HasColumnName("user_password_hash")
+                .IsRequired();
 
             modelBuilder.Entity<User>()
                 .Property(u => u.IsActive)
-                .HasDefaultValue(true);
+                .HasColumnName("user_is_active")
+                .HasDefaultValue(true)
+                .IsRequired();
+
+            // UK - unique constraints
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.NIF)
+                .IsUnique()
+                .HasDatabaseName("uk_user_01_nif");
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique()
+                .HasDatabaseName("uk_user_02_email");
 
 
             /*************************************************************************
