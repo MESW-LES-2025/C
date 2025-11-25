@@ -32,9 +32,9 @@ JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
 // 2. Variáveis de Configuração
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var jwtKey = builder.Configuration["Jwt:Key"];
-var jwtIssuer = builder.Configuration["Jwt:Issuer"];
-var jwtAudience = builder.Configuration["Jwt:Audience"];
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "ConsiliumSecretKeyForDevelopment_MustBeAtLeast32CharactersLong";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "https://localhost:8080";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "http://localhost:4200";
 
 // 3. Base de Dados (Ignora se for Teste)
 if (!builder.Environment.IsEnvironment("Test"))

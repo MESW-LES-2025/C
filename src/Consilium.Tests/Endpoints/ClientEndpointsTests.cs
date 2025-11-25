@@ -7,8 +7,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Consilium.Domain.Models;
 using Consilium.Infrastructure.Data;
 using Consilium.API.Dtos;
+using Microsoft.Extensions.Configuration;
 
 namespace Consilium.Tests.Endpoints;
+
+using Consilium.Tests.TestHelpers;
 
 public class ClientEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
@@ -16,6 +19,7 @@ public class ClientEndpointsTests : IClassFixture<WebApplicationFactory<Program>
 
     public ClientEndpointsTests(WebApplicationFactory<Program> factory)
     {
+        var dbName = "TestDb" + Guid.NewGuid();
         _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Test");
@@ -26,7 +30,7 @@ public class ClientEndpointsTests : IClassFixture<WebApplicationFactory<Program>
 
                 services.AddDbContext<AppDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase("TestDb");
+                    options.UseInMemoryDatabase(dbName);
                     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
                 });
             });
@@ -35,6 +39,7 @@ public class ClientEndpointsTests : IClassFixture<WebApplicationFactory<Program>
 
     private async Task<Guid> SeedClient(AppDbContext db)
     {
+        await AuthTestHelper.SeedAuthUser(db);
         var user = new User { ID = Guid.NewGuid(), Name = "Client One", Email = "client1@test", NIF = "111111111", PasswordHash = "x", IsActive = true };
         var client = new Client { ID = user.ID, Address = "123 St" };
         var phone = new Phone { ID = Guid.NewGuid(), UserID = user.ID, Number = "1234", CountryCode = 351, IsMain = true };
@@ -51,6 +56,7 @@ public class ClientEndpointsTests : IClassFixture<WebApplicationFactory<Program>
     public async Task CreateClient_ReturnsCreated()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         var req = new CreateClientRequest(Email: $"newclient{Guid.NewGuid():N}@test", Password: "pass", Name: "New Client", NIF: "222222222", Address: "Addr 1", PhoneNumber: null, PhoneCountryCode: null, PhoneIsMain: null);
 
@@ -70,6 +76,7 @@ public class ClientEndpointsTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetClientById_ReturnsClient()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         Guid id;
         using (var scope = _factory.Services.CreateScope())
@@ -90,6 +97,7 @@ public class ClientEndpointsTests : IClassFixture<WebApplicationFactory<Program>
     public async Task PatchClient_UpdatesProvidedFields()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         Guid id;
         using (var scope = _factory.Services.CreateScope())
@@ -112,6 +120,7 @@ public class ClientEndpointsTests : IClassFixture<WebApplicationFactory<Program>
     public async Task DeleteClient_DeletesAndReturnsNoContent()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid id;
 
         using (var scope = _factory.Services.CreateScope())

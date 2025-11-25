@@ -7,8 +7,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Consilium.Domain.Models;
 using Consilium.Infrastructure.Data;
 using Consilium.API.Dtos;
+using Microsoft.Extensions.Configuration;
 
 namespace Consilium.Tests.Endpoints;
+
+using Consilium.Tests.TestHelpers;
 
 public class LawyerEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
@@ -16,6 +19,7 @@ public class LawyerEndpointsTests : IClassFixture<WebApplicationFactory<Program>
 
     public LawyerEndpointsTests(WebApplicationFactory<Program> factory)
     {
+        var dbName = "TestDb" + Guid.NewGuid();
         _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Test");
@@ -26,7 +30,7 @@ public class LawyerEndpointsTests : IClassFixture<WebApplicationFactory<Program>
 
                 services.AddDbContext<AppDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase("TestDb");
+                    options.UseInMemoryDatabase(dbName);
                     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
                 });
             });
@@ -35,6 +39,7 @@ public class LawyerEndpointsTests : IClassFixture<WebApplicationFactory<Program>
 
     private async Task<Guid> SeedLawyer(AppDbContext db)
     {
+        await AuthTestHelper.SeedAuthUser(db);
         var user = new User { ID = Guid.NewGuid(), Name = "Lawyer One", Email = "lawyer1@test", NIF = "333333333", PasswordHash = "x", IsActive = true };
         var lawyer = new Lawyer { ID = user.ID, ProfessionalRegister = "LR-1" };
         var phone = new Phone { ID = Guid.NewGuid(), UserID = user.ID, Number = "2222", CountryCode = 351, IsMain = true };
@@ -51,6 +56,7 @@ public class LawyerEndpointsTests : IClassFixture<WebApplicationFactory<Program>
     public async Task CreateLawyer_ReturnsCreated()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         var req = new CreateLawyerRequest(Email: $"newlawyer{Guid.NewGuid():N}@test", Password: "pass", Name: "New Lawyer", NIF: "444444444", ProfessionalRegister: "REG-1", PhoneNumber: null, PhoneCountryCode: null, PhoneIsMain: null);
 
@@ -69,6 +75,7 @@ public class LawyerEndpointsTests : IClassFixture<WebApplicationFactory<Program>
     public async Task GetLawyerById_ReturnsLawyer()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid id;
         using (var scope = _factory.Services.CreateScope())
         {
@@ -88,6 +95,7 @@ public class LawyerEndpointsTests : IClassFixture<WebApplicationFactory<Program>
     public async Task PatchLawyer_UpdatesProvidedFields()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid id;
         using (var scope = _factory.Services.CreateScope())
         {
@@ -109,6 +117,7 @@ public class LawyerEndpointsTests : IClassFixture<WebApplicationFactory<Program>
     public async Task DeleteLawyer_DeletesAndReturnsNoContent()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
