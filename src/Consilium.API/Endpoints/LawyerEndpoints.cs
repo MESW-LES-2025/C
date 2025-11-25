@@ -13,6 +13,7 @@ public static class LawyerEndpoints
         var group = app.MapGroup("/api/lawyers")
             .WithName("Lawyers")
             .WithOpenApi();
+        group.RequireAuthorization("AdminOrLawyer");
 
         group.MapGet("/", GetAllLawyers)
             .WithName("GetAllLawyers")

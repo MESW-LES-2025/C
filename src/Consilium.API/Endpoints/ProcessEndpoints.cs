@@ -14,6 +14,7 @@ public static class ProcessEndpoints
         var group = app.MapGroup("/api/processes")
             .WithName("Processes")
             .WithOpenApi();
+        group.RequireAuthorization("AdminOrLawyer");
 
         group.MapGet("/", GetAllProcesses)
             .WithName("GetAllProcesses")

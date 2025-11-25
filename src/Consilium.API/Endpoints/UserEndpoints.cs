@@ -11,6 +11,7 @@ public static class UserEndpoints
         var group = app.MapGroup("/api/users")
             .WithName("Users")
             .WithOpenApi();
+        group.RequireAuthorization("AdminOrLawyer");
 
         group.MapGet("/", GetAllUsers)
             .WithName("GetAllUsers")

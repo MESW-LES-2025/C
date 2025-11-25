@@ -14,6 +14,7 @@ public static class ClientEndpoints
         var group = app.MapGroup("/api/clients")
             .WithName("Clients")
             .WithOpenApi();
+        group.RequireAuthorization("AdminOrLawyer");
 
         group.MapGet("/", GetAllClients)
             .WithName("GetAllClients")

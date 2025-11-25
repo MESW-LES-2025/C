@@ -1,116 +1,135 @@
-using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Diagnostics;
-using Consilium.Infrastructure.Data;
-using Consilium.Application.Interfaces;
-using Consilium.Infrastructure.Repositories;
-using Consilium.Infrastructure.Services;
 using Consilium.API.Endpoints;
 using Consilium.API.Services;
+using Consilium.Application.Interfaces;
+using Consilium.Infrastructure.Data;
+using Consilium.Infrastructure.Repositories;
+using Consilium.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Npgsql;
 
+// 1. Configurações Globais
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Use in-memory DB for tests when using the 'Test' environment
-// When environment is 'Test' we do not register an EF provider here so tests
-// can substitute one (for example an InMemory DB) without having Npgsql also
-// registered which causes EF to raise an exception about multiple providers.
-if (!builder.Environment.IsEnvironment("Test"))
+// Configurações de Ambiente
+if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(connectionString));
+    Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
 }
 
+// Previne o mapeamento automático de claims (mantém 'role' e 'username' como vêm do JSON)
+JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
+
+// 2. Variáveis de Configuração
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+
+// 3. Base de Dados (Ignora se for Teste)
+if (!builder.Environment.IsEnvironment("Test"))
+{
+    builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+}
+
+// 4. Serialização JSON
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
-// --- Register Services (Dependency Injection) ---
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IClientRepository, ClientRepository>();
-builder.Services.AddScoped<ILawyerRepository, LawyerRepository>();
-builder.Services.AddScoped<IAdminRepository, AdminRepository>();
-builder.Services.AddScoped<IProcessRepository, ProcessRepository>();
-builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-builder.Services.AddScoped<JwtTokenService>();
-// builder.Services.AddScoped<AuditLogFacade>();
+// 5. Injeção de Dependência (Serviços e Repositórios)
+RegisterApplicationServices(builder.Services);
 
-// --- Add API Services ---
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-// Configure antiforgery for form-based endpoints (multipart). We will enable middleware so
-// endpoints that carry antiforgery metadata (e.g., IgnoreAntiforgeryToken/ValidateAntiForgeryToken)
-// do not cause runtime errors when executed without middleware.
+// 6. Configuração de Autenticação (JWT)
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false; // Mantido como pedido
+    options.SaveToken = true;
+    
+    // Parâmetros de validação
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey ?? string.Empty)),
+        RoleClaimType = "role",       
+        NameClaimType = "username",   
+    };
+
+    // Eventos de Log (Lógica movida para função auxiliar no fundo do ficheiro)
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = LogAuthFailure,
+        OnTokenValidated = LogTokenSuccess
+    };
+});
+
+// 7. Configuração de Autorização
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOrLawyer", policy =>
+        policy.RequireAuthenticatedUser().RequireRole("Admin", "Lawyer"));
+    
+    options.AddPolicy("OnlyAdmin", policy =>
+        policy.RequireAuthenticatedUser().RequireRole("Admin"));
+
+    options.AddPolicy("Any", policy =>
+        policy.RequireAuthenticatedUser().RequireRole("Admin", "Lawyer", "Client"));
+});
+
+// 8. Swagger e Antiforgery
+ConfigureSwagger(builder.Services);
 builder.Services.AddAntiforgery();
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-    });
+    options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
+// --- BUILD DA APLICAÇÃO ---
 var app = builder.Build();
 
-// --- Configure Exception Handling Middleware ---
-app.UseExceptionHandler((exceptionHandlerApp) =>
+// 9. Pipeline de Erros (Lógica movida para função auxiliar)
+app.UseExceptionHandler(errorApp =>
 {
-    exceptionHandlerApp.Run(async context =>
-    {
-        var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
-        var exception = exceptionHandlerPathFeature?.Error;
-
-        // Handle DbUpdateException for unique constraint violations
-        if (exception is DbUpdateException dbEx)
-        {
-            if (dbEx.InnerException is PostgresException pgEx)
-            {
-                // Handle unique constraint violations
-                if (pgEx.SqlState == "23505") // Unique violation
-                {
-                    context.Response.StatusCode = StatusCodes.Status409Conflict;
-                    context.Response.ContentType = "application/json";
-                    
-                    var message = pgEx.ConstraintName switch
-                    {
-                        "uk_user_01_nif" => "A client with this NIF already exists",
-                        "uk_user_02_email" => "A user with this email already exists",
-                        _ => "A record with this value already exists"
-                    };
-                    
-                    await context.Response.WriteAsJsonAsync(new { message });
-                    return;
-                }
-            }
-        }
-
-        // Default error response
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(new { message = "An error occurred" });
-    });
+    errorApp.Run(HandleCustomExceptions);
 });
 
-// --- Configure HTTP Pipeline ---
+// 10. Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseCors();
-// Ensure antiforgery middleware is registered before endpoint execution. This allows
-// minimal API endpoints to opt-out or validate antiforgery per-route via attributes.
 app.UseRouting();
 app.UseAntiforgery();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok", message = "This is cool" }));
 
-// --- Map API Endpoints ---
+// 11. Endpoints
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapClientEndpoints();
@@ -122,5 +141,98 @@ app.MapLookupEndpoints();
 
 app.Run();
 
-// Expose Program class to allow integration testing with WebApplicationFactory
+// --- FUNÇÕES AUXILIARES (Para manter o topo limpo) ---
+
+void RegisterApplicationServices(IServiceCollection services)
+{
+    services.AddScoped<IUserRepository, UserRepository>();
+    services.AddScoped<IClientRepository, ClientRepository>();
+    services.AddScoped<ILawyerRepository, LawyerRepository>();
+    services.AddScoped<IAdminRepository, AdminRepository>();
+    services.AddScoped<IProcessRepository, ProcessRepository>();
+    services.AddScoped<IPasswordHasher, PasswordHasher>();
+    services.AddScoped<JwtTokenService>();
+    services.AddEndpointsApiExplorer();
+}
+
+void ConfigureSwagger(IServiceCollection services)
+{
+    services.AddSwaggerGen(c =>
+    {
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Description = "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'",
+            Name = "Authorization",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT"
+        });
+
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                },
+                Array.Empty<string>()
+            }
+        });
+    });
+}
+
+// Lógica de Logs de Autenticação (Extraída do AddJwtBearer)
+Task LogAuthFailure(AuthenticationFailedContext context)
+{
+    var logger = context.HttpContext.RequestServices.GetService<ILogger<Program>>();
+    var authHeader = context.HttpContext.Request.Headers["Authorization"].ToString();
+    var maskedHeader = string.IsNullOrEmpty(authHeader) ? "(none)" : (authHeader.Length <= 20 ? authHeader : authHeader.Substring(0, 20) + "...[truncated]");
+    logger?.LogWarning(context.Exception, "JWT authentication failed. Authorization header (masked): {MaskedHeader}", maskedHeader);
+    return Task.CompletedTask;
+}
+
+Task LogTokenSuccess(TokenValidatedContext context)
+{
+    var logger = context.HttpContext.RequestServices.GetService<ILogger<Program>>();
+    var name = context.Principal?.Identity?.Name;
+    foreach (var c in context.Principal?.Claims ?? Array.Empty<Claim>())
+    {
+        logger?.LogDebug("JWT claim: {ClaimType} = {ClaimValue}", c.Type, c.Value);
+    }
+    var roleClaim = context.Principal?.FindFirst("role")?.Value;
+    logger?.LogInformation("JWT validated for user '{name}' with role '{role}'", name, roleClaim);
+    return Task.CompletedTask;
+}
+
+// Lógica de Tratamento de Erros (Extraída do UseExceptionHandler)
+async Task HandleCustomExceptions(HttpContext context)
+{
+    var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+    var exception = exceptionHandlerPathFeature?.Error;
+
+    if (exception is DbUpdateException dbEx && dbEx.InnerException is PostgresException pgEx)
+    {
+        if (pgEx.SqlState == "23505") // Unique violation
+        {
+            context.Response.StatusCode = StatusCodes.Status409Conflict;
+            context.Response.ContentType = "application/json";
+            
+            var message = pgEx.ConstraintName switch
+            {
+                "uk_user_01_nif" => "A client with this NIF already exists",
+                "uk_user_02_email" => "A user with this email already exists",
+                _ => "A record with this value already exists"
+            };
+            
+            await context.Response.WriteAsJsonAsync(new { message });
+            return;
+        }
+    }
+
+    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    context.Response.ContentType = "application/json";
+    await context.Response.WriteAsJsonAsync(new { message = "An error occurred" });
+}
+
 public partial class Program { }

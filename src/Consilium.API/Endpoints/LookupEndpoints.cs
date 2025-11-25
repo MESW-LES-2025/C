@@ -12,6 +12,7 @@ public static class LookupEndpoints
         var group = app.MapGroup("/api/lookups")
             .WithName("Lookups")
             .WithOpenApi();
+        group.RequireAuthorization("Any");
 
         group.MapGet("/process-types", GetProcessTypes)
             .WithName("GetProcessTypes")
