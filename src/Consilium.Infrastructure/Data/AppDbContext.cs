@@ -80,10 +80,6 @@ namespace Consilium.Infrastructure.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // CLIENT
-            // Mapping to match PostgreSQL script:
-            // - Column names: client_id, client_address
-            // - PK name: PK_CLIENT
-            // - FK name: fk_client_user_01 (references core.user.user_id)
             modelBuilder.Entity<Client>()
                 .HasKey(c => c.ID)
                 .HasName("PK_CLIENT");
