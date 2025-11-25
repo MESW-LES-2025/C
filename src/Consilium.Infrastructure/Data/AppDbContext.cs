@@ -61,6 +61,7 @@ namespace Consilium.Infrastructure.Data
             // ADMIN
             modelBuilder.Entity<Admin>()
                 .HasKey(a => a.ID)
+                // PK
                 .HasName("pk_admin");
 
             modelBuilder.Entity<Admin>()
@@ -72,6 +73,7 @@ namespace Consilium.Infrastructure.Data
                 .HasColumnName("admin_started_at")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+            // FK
             modelBuilder.Entity<Admin>()
                 .HasOne(a => a.User)
                 .WithOne(u => u.Admin)
@@ -82,6 +84,7 @@ namespace Consilium.Infrastructure.Data
             // CLIENT
             modelBuilder.Entity<Client>()
                 .HasKey(c => c.ID)
+                // PK
                 .HasName("PK_CLIENT");
 
             modelBuilder.Entity<Client>()
@@ -94,6 +97,7 @@ namespace Consilium.Infrastructure.Data
                 .HasMaxLength(500)
                 .IsRequired();
 
+            // FK
             modelBuilder.Entity<Client>()
                 .HasOne(c => c.User)
                 .WithOne(u => u.Client)
@@ -104,6 +108,7 @@ namespace Consilium.Infrastructure.Data
             // LAWYER
             modelBuilder.Entity<Lawyer>()
                 .HasKey(l => l.ID)
+                // PK
                 .HasName("pk_lawyer");
 
             modelBuilder.Entity<Lawyer>()
@@ -116,11 +121,12 @@ namespace Consilium.Infrastructure.Data
                 .HasMaxLength(20)
                 .IsRequired();
 
-            // Unique constraint on professional register
+            // UK
             modelBuilder.Entity<Lawyer>()
                 .HasAlternateKey(l => l.ProfessionalRegister)
                 .HasName("uk_lawyer_01_register");
 
+            // FK
             modelBuilder.Entity<Lawyer>()
                 .HasOne(l => l.User)
                 .WithOne(u => u.Lawyer)
@@ -130,17 +136,50 @@ namespace Consilium.Infrastructure.Data
 
             // PHONE
             modelBuilder.Entity<Phone>()
-                .HasKey(p => p.ID);
+                .HasKey(p => p.ID)
+                // PK
+                .HasName("pk_phone");
 
+            modelBuilder.Entity<Phone>()
+                .Property(p => p.ID)
+                .HasColumnName("phone_id");
+
+            modelBuilder.Entity<Phone>()
+                .Property(p => p.UserID)
+                .HasColumnName("fk_user_id")
+                .IsRequired();
+
+            modelBuilder.Entity<Phone>()
+                .Property(p => p.CountryCode)
+                .HasColumnName("phone_country_code")
+                .HasDefaultValue((short)351)
+                .IsRequired();
+
+            modelBuilder.Entity<Phone>()
+                .Property(p => p.Number)
+                .HasColumnName("phone_number")
+                .HasMaxLength(20)
+                .IsRequired();
+
+            modelBuilder.Entity<Phone>()
+                .Property(p => p.IsMain)
+                .HasColumnName("phone_is_main")
+                .HasDefaultValue(true)
+                .IsRequired();
+
+            // UK
+            modelBuilder.Entity<Phone>()
+                .HasIndex(p => new { p.UserID, p.CountryCode, p.Number })
+                .IsUnique()
+                .HasDatabaseName("uk_phone_01_user_number");
+
+            // FK
             modelBuilder.Entity<Phone>()
                 .HasOne(p => p.User)
                 .WithMany(u => u.Phones)
                 .HasForeignKey(p => p.UserID)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Phone>()
-                .Property(p => p.CountryCode)
-                .HasDefaultValue((short)351);
+                .HasConstraintName("fk_phone_user_01")
+                .OnDelete(DeleteBehavior.Restrict);
 
             // USER
             modelBuilder.Entity<User>()
