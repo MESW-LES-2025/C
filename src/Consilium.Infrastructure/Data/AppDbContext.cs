@@ -45,11 +45,20 @@ namespace Consilium.Infrastructure.Data
             base.OnModelCreating(modelBuilder);
 
             /*************************************************************************
-             *************** SET DEFAULT SCHEMA TO CORE AND ITS TABLES ***************
+            ************************** CORE SCHEMA ENTITIES **************************
             *************************************************************************/
+            // All tables listed here belong to the CORE schema.
+            // - ACTION_LOG_TYPE
+            // - ADMIN
+            // - CLIENT
+            // - LAWYER
+            // - PHONE
+            // - USER
+            // - USER_LOG
+
             modelBuilder.HasDefaultSchema("core");
 
-            // ***************  ADMIN ENTITY *************** //
+            // ADMIN
             modelBuilder.Entity<Admin>()
                 .HasKey(a => a.ID);
 
@@ -63,7 +72,7 @@ namespace Consilium.Infrastructure.Data
                 .Property(a => a.StartedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            // ***************  CLIENT ENTITY *************** //
+            // CLIENT
             modelBuilder.Entity<Client>()
                 .HasKey(c => c.ID);
 
@@ -73,17 +82,7 @@ namespace Consilium.Infrastructure.Data
                 .HasForeignKey<Client>(c => c.ID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // ***************  DOCUMENT ENTITY *************** //
-            modelBuilder.Entity<Document>()
-                .HasKey(d => d.Id);
-
-            modelBuilder.Entity<Document>()
-                .HasOne(d => d.Process)
-                .WithMany(p => p.Documents)
-                .HasForeignKey(d => d.ProcessId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // ***************  LAWYER ENTITY *************** //
+            // LAWYER
             modelBuilder.Entity<Lawyer>()
                 .HasKey(l => l.ID);
 
@@ -93,7 +92,7 @@ namespace Consilium.Infrastructure.Data
                 .HasForeignKey<Lawyer>(l => l.ID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // ***************  PHONE ENTITY *************** //
+            // PHONE
             modelBuilder.Entity<Phone>()
                 .HasKey(p => p.ID);
 
@@ -107,7 +106,34 @@ namespace Consilium.Infrastructure.Data
                 .Property(p => p.CountryCode)
                 .HasDefaultValue((short)351);
 
-            // ***************  PROCESS ENTITY *************** //
+            // USER
+            modelBuilder.Entity<User>()
+                .HasKey(u => u.ID);
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.IsActive)
+                .HasDefaultValue(true);
+
+
+            /*************************************************************************
+            ********************** END OF CORE SCHEMA ENTITIES ***********************
+            *************************************************************************/
+
+            /*************************************************************************
+            ************************* LEGAL SCHEMA ENTITIES *************************
+            *************************************************************************/
+
+            // DOCUMENT
+            modelBuilder.Entity<Document>()
+                .HasKey(d => d.Id);
+
+            modelBuilder.Entity<Document>()
+                .HasOne(d => d.Process)
+                .WithMany(p => p.Documents)
+                .HasForeignKey(d => d.ProcessId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // PROCESS
             modelBuilder.Entity<Process>()
                 .Property(p => p.CreatedAt)
                 .ValueGeneratedOnAdd();
@@ -116,13 +142,6 @@ namespace Consilium.Infrastructure.Data
                 .Property(p => p.CreatedAt)
                 .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
 
-            // ***************  USER ENTITY *************** //
-            modelBuilder.Entity<User>()
-                .HasKey(u => u.ID);
-
-            modelBuilder.Entity<User>()
-                .Property(u => u.IsActive)
-                .HasDefaultValue(true);
         }
     }
 }
