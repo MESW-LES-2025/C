@@ -60,17 +60,24 @@ namespace Consilium.Infrastructure.Data
 
             // ADMIN
             modelBuilder.Entity<Admin>()
-                .HasKey(a => a.ID);
+                .HasKey(a => a.ID)
+                .HasName("pk_admin");
+
+            modelBuilder.Entity<Admin>()
+                .Property(a => a.ID)
+                .HasColumnName("admin_id");
+
+            modelBuilder.Entity<Admin>()
+                .Property(a => a.StartedAt)
+                .HasColumnName("admin_started_at")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<Admin>()
                 .HasOne(a => a.User)
                 .WithOne(u => u.Admin)
                 .HasForeignKey<Admin>(a => a.ID)
+                .HasConstraintName("fk_admin_user_01")
                 .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Admin>()
-                .Property(a => a.StartedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             // CLIENT
             modelBuilder.Entity<Client>()
