@@ -240,14 +240,55 @@ namespace Consilium.Infrastructure.Data
             ************************* LEGAL SCHEMA ENTITIES *************************
             *************************************************************************/
 
-            // DOCUMENT
+            // **************** DOCUMENT **************** //
             modelBuilder.Entity<Document>()
-                .HasKey(d => d.Id);
+                .HasKey(d => d.Id)
+                // PK
+                .HasName("pk_document");
 
+            modelBuilder.Entity<Document>()
+                .Property(d => d.Id)
+                .HasColumnName("document_id");
+
+            modelBuilder.Entity<Document>()
+                .Property(d => d.ProcessId)
+                .HasColumnName("process_id")
+                .IsRequired();
+
+            modelBuilder.Entity<Document>()
+                .Property(d => d.FileName)
+                .HasColumnName("file_name")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            modelBuilder.Entity<Document>()
+                .Property(d => d.File)
+                .HasColumnName("file")
+                .IsRequired();
+
+            modelBuilder.Entity<Document>()
+                .Property(d => d.FileMimeType)
+                .HasColumnName("file_mimetype")
+                .HasMaxLength(50)
+                .IsRequired();
+
+            modelBuilder.Entity<Document>()
+                .Property(d => d.FileSize)
+                .HasColumnName("file_size")
+                .IsRequired();
+
+            modelBuilder.Entity<Document>()
+                .Property(d => d.CreatedAt)
+                .HasColumnName("created_at")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .IsRequired();
+
+            // FK
             modelBuilder.Entity<Document>()
                 .HasOne(d => d.Process)
                 .WithMany(p => p.Documents)
                 .HasForeignKey(d => d.ProcessId)
+                .HasConstraintName("fk_document_process_01")
                 .OnDelete(DeleteBehavior.Cascade);
 
             // PROCESS
