@@ -291,15 +291,128 @@ namespace Consilium.Infrastructure.Data
                 .HasConstraintName("fk_document_process_01")
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // PROCESS
+            // **************** PROCESS **************** //
+            modelBuilder.Entity<Process>()
+                .HasKey(p => p.Id)
+                // PK
+                .HasName("pk_process");
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.Id)
+                .HasColumnName("process_id");
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.Name)
+                .HasColumnName("process_name")
+                .HasMaxLength(255)
+                .IsRequired();
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.Number)
+                .HasColumnName("process_number")
+                .HasMaxLength(255)
+                .IsRequired();
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.ClientId)
+                .HasColumnName("client_id")
+                .IsRequired();
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.LawyerId)
+                .HasColumnName("lawyer_id")
+                .IsRequired();
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.AdversePartName)
+                .HasColumnName("process_adverse_part_name")
+                .HasMaxLength(255);
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.OpposingCounselName)
+                .HasColumnName("process_opposing_counsel_name")
+                .HasMaxLength(255);
+
             modelBuilder.Entity<Process>()
                 .Property(p => p.CreatedAt)
-                .ValueGeneratedOnAdd();
+                .HasColumnName("process_created_at")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .ValueGeneratedOnAdd()
+                .IsRequired();
 
             modelBuilder.Entity<Process>()
                 .Property(p => p.CreatedAt)
                 .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
 
+            modelBuilder.Entity<Process>()
+                .Property(p => p.ClosedAt)
+                .HasColumnName("process_closed_at");
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.Description)
+                .HasColumnName("process_dsc");
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.NextHearingDate)
+                .HasColumnName("process_next_hearing_date");
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.Priority)
+                .HasColumnName("process_priority")
+                .IsRequired();
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.CourtInfo)
+                .HasColumnName("process_court_info")
+                .IsRequired();
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.ProcessTypePhaseId)
+                .HasColumnName("process_type_phase_id")
+                .IsRequired();
+
+            modelBuilder.Entity<Process>()
+                .Property(p => p.ProcessStatusId)
+                .HasColumnName("process_status_id")
+                .IsRequired();
+
+            // UK
+            modelBuilder.Entity<Process>()
+                .HasIndex(p => new { p.Number, p.ClientId, p.LawyerId })
+                .IsUnique()
+                .HasDatabaseName("uk_process_01");
+
+            // FK
+            modelBuilder.Entity<Process>()
+                .HasOne(p => p.Client)
+                .WithMany()
+                .HasForeignKey(p => p.ClientId)
+                .HasConstraintName("fk_process_client_01")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // FK
+            modelBuilder.Entity<Process>()
+                .HasOne(p => p.Lawyer)
+                .WithMany()
+                .HasForeignKey(p => p.LawyerId)
+                .HasConstraintName("fk_process_lawyer_02")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // FK
+            modelBuilder.Entity<Process>()
+                .HasOne(p => p.Status)
+                .WithMany()
+                .HasForeignKey(p => p.ProcessStatusId)
+                .HasConstraintName("fk_process_status_03")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // FK
+            modelBuilder.Entity<Process>()
+                .HasOne(p => p.ProcessTypePhase)
+                .WithMany()
+                .HasForeignKey(p => p.ProcessTypePhaseId)
+                .HasConstraintName("fk_process_type_phase_04")
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
