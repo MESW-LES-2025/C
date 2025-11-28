@@ -13,6 +13,7 @@ public static class AdminEndpoints
         var group = app.MapGroup("/api/admins")
             .WithName("Admins")
             .WithOpenApi();
+        group.RequireAuthorization("OnlyAdmin");
 
         group.MapGet("/", GetAllAdmins)
             .WithName("GetAllAdmins")

@@ -10,6 +10,7 @@ public static class DocumentEndpoints
         var group = app.MapGroup("/api/documents")
             .WithName("Documents")
             .WithOpenApi();
+        group.RequireAuthorization("Any");
 
         group.MapGet("/{id:guid}/download", DownloadDocument)
             .WithName("DownloadDocument")

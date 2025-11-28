@@ -7,8 +7,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Consilium.Domain.Models;
 using Consilium.Infrastructure.Data;
 using Consilium.API.Dtos;
+using Microsoft.Extensions.Configuration;
 
 namespace Consilium.Tests.Endpoints;
+
+using Consilium.Tests.TestHelpers;
 
 public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
@@ -16,6 +19,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
 
     public ProcessEndpointsTests(WebApplicationFactory<Program> factory)
     {
+        var dbName = "TestDb" + Guid.NewGuid();
         _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Test");
@@ -31,7 +35,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
                 // Setup InMemory DB
                 services.AddDbContext<AppDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase("TestDb");
+                    options.UseInMemoryDatabase(dbName);
                     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
                 });
             });
@@ -40,6 +44,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
 
     private async Task SeedMinimalData(AppDbContext db)
     {
+        await AuthTestHelper.SeedAuthUser(db);
         // Add Users (Client and Lawyer)
         var clientUser = new User { ID = Guid.NewGuid(), Name = "Client Test", Email = "client@test", NIF = "111111111", PasswordHash = "x", IsActive = true };
         var lawyerUser = new User { ID = Guid.NewGuid(), Name = "Lawyer Test", Email = "lawyer@test", NIF = "222222222", PasswordHash = "x", IsActive = true };
@@ -70,6 +75,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     {
         // Arrange
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         // Get DB from the factory and seed
         using (var scope = _factory.Services.CreateScope())
@@ -160,6 +166,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task CreateProcess_MissingTypePhase_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         // Get DB from the factory and seed minimal client/lawyer
         using (var scope = _factory.Services.CreateScope())
@@ -203,6 +210,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task GetProcessByIdWithDocuments_ReturnsProcessWithDocuments()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid processId;
 
         using (var scope = _factory.Services.CreateScope())
@@ -245,6 +253,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task CreateProcessWithDocuments_UploadsDocumentsAndCreatesProcess()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         // Seed minimal data
         using (var scope = _factory.Services.CreateScope())
         {
@@ -289,6 +298,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task CreateProcess_MissingName_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -332,6 +342,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task CreateProcess_MissingNumber_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -375,6 +386,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task CreateProcess_NegativePriority_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -418,6 +430,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task CreateProcess_InvalidClient_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -459,6 +472,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task CreateProcess_InvalidLawyer_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -500,6 +514,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task UpdateProcess_NotFound_ReturnsNotFound()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         var updateReq = new UpdateProcessRequest("NewName", null, null, null, null, null, null, null, null, null, null, null, null);
         var resp = await client.PatchAsJsonAsync($"/api/processes/{Guid.NewGuid()}", updateReq);
@@ -510,6 +525,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task UpdateProcessWithDocuments_InvalidDeletedDocumentIdFormat_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -558,6 +574,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task UpdateProcessWithDocuments_DeleteDocumentNotBelongingToProcess_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         Guid otherDocId;
         Guid currentProcessId;
@@ -619,6 +636,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task UpdateProcessWithDocuments_InvalidClientIdFormat_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         Guid processId;
         using (var scope = _factory.Services.CreateScope())
@@ -658,6 +676,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task DeleteProcess_NotFound_ReturnsNotFound()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         var resp = await client.DeleteAsync($"/api/processes/{Guid.NewGuid()}");
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
@@ -666,6 +685,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task UpdateProcess_ValidData_ReturnsOkAndUpdatesProcess()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid processId;
 
         using (var scope = _factory.Services.CreateScope())
@@ -726,6 +746,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task UpdateProcess_InvalidClient_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid processId;
 
         using (var scope = _factory.Services.CreateScope())
@@ -779,6 +800,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task UpdateProcess_InvalidLawyer_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid processId;
 
         using (var scope = _factory.Services.CreateScope())
@@ -832,6 +854,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task UpdateProcess_InvalidProcessTypePhase_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid processId;
 
         using (var scope = _factory.Services.CreateScope())
@@ -885,6 +908,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task UpdateProcess_InvalidProcessStatus_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid processId;
 
         using (var scope = _factory.Services.CreateScope())
@@ -938,6 +962,7 @@ public class ProcessEndpointsTests : IClassFixture<WebApplicationFactory<Program
     public async Task UpdateProcessWithDocuments_ValidData_ReturnsOk()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid processId;
 
         using (var scope = _factory.Services.CreateScope())
