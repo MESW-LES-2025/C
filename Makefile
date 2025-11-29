@@ -60,10 +60,17 @@ up-prod:
 	$(COMPOSE) -f $(PROD_FILE) up -d
 
 run-prod: build-prod up-prod
-	@echo "✓ Prod environment running (INFO logs, no Swagger)"
+	@echo "✓ Prod environment running (Remote Backend - Render)"
 	@echo "  Frontend: http://localhost:4200"
 	@echo "  Backend:  http://localhost:8080"
 	# @echo "  Qdrant:   http://localhost:6333"
+
+run-prod-local:
+	FRONTEND_CONFIG=docker $(COMPOSE) -f $(PROD_FILE) build --no-cache
+	FRONTEND_CONFIG=docker $(COMPOSE) -f $(PROD_FILE) up -d
+	@echo "✓ Prod environment running (Local Backend)"
+	@echo "  Frontend: http://localhost:4200"
+	@echo "  Backend:  http://localhost:8080"
 
 
 # ------------------------

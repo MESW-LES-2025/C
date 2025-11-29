@@ -99,7 +99,14 @@ ConfigureSwagger(builder.Services);
 builder.Services.AddAntiforgery();
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    options.AddDefaultPolicy(policy => 
+        policy.WithOrigins(
+            "http://localhost:4200", 
+            "https://consilium-web-staging.onrender.com", 
+            "https://consilium-web-prod-ea6s.onrender.com")
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+    );
 });
 
 var app = builder.Build();
@@ -119,7 +126,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 app.UseAntiforgery();
-
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
