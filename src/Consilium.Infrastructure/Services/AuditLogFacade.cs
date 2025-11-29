@@ -14,7 +14,7 @@ public class AuditLogFacade
         _context = context;
     }
 
-    private async Task<ActionLogType> GetOrCreateActionTypeAsync(string name)
+        private async Task<ActionLogType> GetOrCreateActionTypeAsync(string name)
     {
         var e = await _context.ActionLogTypes
             .FirstOrDefaultAsync(a => a.Name == name);
@@ -22,7 +22,7 @@ public class AuditLogFacade
         if (e != null)
             return e;
 
-        var newType = new ActionLogType { ID = Guid.NewGuid(), Name = name };
+            var newType = new ActionLogType { Name = name };
         _context.ActionLogTypes.Add(newType);
         await _context.SaveChangesAsync();
         return newType;

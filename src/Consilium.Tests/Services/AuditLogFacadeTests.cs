@@ -224,7 +224,7 @@ public class AuditLogFacadeTests
         await context.Users.AddAsync(user);
 
         // create user log where user is affected
-        var actionType = new ActionLogType { ID = Guid.NewGuid(), Name = "TEST" };
+    var actionType = new ActionLogType { ID = 1, Name = "TEST" };
         await context.ActionLogTypes.AddAsync(actionType);
         await context.SaveChangesAsync();
 

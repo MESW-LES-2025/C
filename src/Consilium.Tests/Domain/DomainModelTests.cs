@@ -55,7 +55,7 @@ public class DomainModelTests
             ID = Guid.NewGuid(),
             ProcessID = Guid.NewGuid(),
             UpdatedByID = Guid.NewGuid(),
-            ActionLogTypeID = Guid.NewGuid(),
+            ActionLogTypeID = 1,
             OldValue = System.Text.Json.JsonSerializer.SerializeToElement(new { foo = 1 }),
             NewValue = System.Text.Json.JsonSerializer.SerializeToElement(new { bar = 2 }),
             UpdatedAt = DateTime.UtcNow
@@ -64,7 +64,7 @@ public class DomainModelTests
         Assert.NotEqual(Guid.Empty, log.ID);
         Assert.NotEqual(Guid.Empty, log.ProcessID);
         Assert.NotEqual(Guid.Empty, log.UpdatedByID);
-        Assert.NotEqual(Guid.Empty, log.ActionLogTypeID);
+    Assert.NotEqual(0, log.ActionLogTypeID);
         Assert.NotEqual<string>("{}", log.OldValue?.ToString());
         Assert.NotEqual<string>("{}", log.NewValue?.ToString());
     }

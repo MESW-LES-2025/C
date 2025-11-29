@@ -47,16 +47,29 @@ namespace Consilium.Infrastructure.Data
             /*************************************************************************
             ************************** CORE SCHEMA ENTITIES **************************
             *************************************************************************/
-            // All tables listed here belong to the CORE schema.
-            // - ACTION_LOG_TYPE
-            // - ADMIN
-            // - CLIENT
-            // - LAWYER
-            // - PHONE
-            // - USER
-            // - USER_LOG
-
             modelBuilder.HasDefaultSchema("core");
+
+            // **************** ACTION_LOG_TYPE **************** //
+            modelBuilder.Entity<ActionLogType>()
+                .HasKey(a => a.ID)
+                // PK
+                .HasName("PK_ACTION_LOG_TYPE");
+
+            modelBuilder.Entity<ActionLogType>()
+                .Property(a => a.ID)
+                .HasColumnName("action_log_type_id");
+
+            modelBuilder.Entity<ActionLogType>()
+                .Property(a => a.Name)
+                .HasColumnName("action_log_type_name")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            // UK
+            modelBuilder.Entity<ActionLogType>()
+                .HasIndex(a => a.Name)
+                .IsUnique()
+                .HasDatabaseName("UK_ACTION_LOG_TYPE_01");
 
             // **************** ADMIN **************** //
             modelBuilder.Entity<Admin>()

@@ -17,8 +17,8 @@ namespace Consilium.Domain.Models
         [Column("updated_by_id")]
         public Guid? UpdatedByID { get; set; }
 
-        [Column("action_log_type_id")]
-        public Guid ActionLogTypeID { get; set; }
+    [Column("action_log_type_id")]
+    public int ActionLogTypeID { get; set; }
 
         [Column("process_log_old_value")]
         public JsonElement? OldValue { get; set; }

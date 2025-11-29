@@ -8,7 +8,8 @@ namespace Consilium.Domain.Models
     {
         [Key]
         [Column("action_log_type_id")]
-        public Guid ID { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int ID { get; set; }
 
         [Column("action_log_type_name")]
         [Required]
