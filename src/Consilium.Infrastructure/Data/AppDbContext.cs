@@ -50,49 +50,30 @@ namespace Consilium.Infrastructure.Data
             modelBuilder.HasDefaultSchema("core");
 
             // **************** ACTION_LOG_TYPE **************** //
-            modelBuilder.Entity<ActionLogType>()
-                .HasKey(a => a.ID)
+            modelBuilder.Entity<ActionLogType>(entity =>
+            {
+                entity.ToTable("action_log_type", "core");
+
                 // PK
-                .HasName("PK_ACTION_LOG_TYPE");
+                entity.HasKey(e => e.ID).HasName("pk_action_log_type");
 
-            modelBuilder.Entity<ActionLogType>()
-                .Property(a => a.ID)
-                .HasColumnName("action_log_type_id");
+                // COLUMNS
+                entity.Property(e => e.ID)
+                    .HasColumnName("action_log_type_id")
+                    .HasColumnType("integer") // Omitível, mas explicitando o tipo INTEGER
+                    .ValueGeneratedOnAdd(); // Necessário para refletir o DEFAULT nextval no banco de dados
 
-            modelBuilder.Entity<ActionLogType>()
-                .Property(a => a.Name)
-                .HasColumnName("action_log_type_name")
-                .HasMaxLength(100)
-                .IsRequired();
+                entity.Property(e => e.Name)
+                    .HasColumnName("action_log_type_name")
+                    .HasColumnType("character varying(100)")
+                    .HasMaxLength(100)
+                    .IsRequired();
 
-            // UK
-            modelBuilder.Entity<ActionLogType>()
-                .HasIndex(a => a.Name)
-                .IsUnique()
-                .HasDatabaseName("UK_ACTION_LOG_TYPE_01");
-
-            // **************** ADMIN **************** //
-            modelBuilder.Entity<Admin>()
-                .HasKey(a => a.ID)
-                // PK
-                .HasName("pk_admin");
-
-            modelBuilder.Entity<Admin>()
-                .Property(a => a.ID)
-                .HasColumnName("admin_id");
-
-            modelBuilder.Entity<Admin>()
-                .Property(a => a.StartedAt)
-                .HasColumnName("admin_started_at")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-            // FK
-            modelBuilder.Entity<Admin>()
-                .HasOne(a => a.User)
-                .WithOne(u => u.Admin)
-                .HasForeignKey<Admin>(a => a.ID)
-                .HasConstraintName("fk_admin_user_01")
-                .OnDelete(DeleteBehavior.Cascade);
+                // UK
+                entity.HasIndex(e => e.Name)
+                    .IsUnique()
+                    .HasDatabaseName("uk_action_log_type_01");
+            });
 
             // **************** CLIENT **************** //
             modelBuilder.Entity<Client>()
@@ -195,54 +176,62 @@ namespace Consilium.Infrastructure.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // **************** USER **************** //
-            modelBuilder.Entity<User>()
-                .HasKey(u => u.ID)
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.ToTable("user", "core");
+
                 // PK
-                .HasName("pk_user");
+                entity.HasKey(u => u.ID).HasName("pk_user");
 
-            modelBuilder.Entity<User>()
-                .Property(u => u.ID)
-                .HasColumnName("user_id");
+                // COLUMNS
+                entity.Property(u => u.ID)
+                    .HasColumnName("user_id")
+                    .HasColumnType("uuid");
 
-            modelBuilder.Entity<User>()
-                .Property(u => u.Name)
-                .HasColumnName("user_name")
-                .HasMaxLength(254)
-                .IsRequired();
+                entity.Property(u => u.Name)
+                    .HasColumnName("user_name")
+                    .HasColumnType("character varying(254)")
+                    .HasMaxLength(254)
+                    .IsRequired();
 
-            modelBuilder.Entity<User>()
-                .Property(u => u.NIF)
-                .HasColumnName("user_nif")
-                .HasMaxLength(9)
-                .IsRequired();
+                entity.Property(u => u.NIF)
+                    .HasColumnName("user_nif")
+                    .HasColumnType("char(9)")
+                    .HasMaxLength(9)
+                    .IsRequired();
 
-            modelBuilder.Entity<User>()
-                .Property(u => u.Email)
-                .HasColumnName("user_email")
-                .HasMaxLength(254)
-                .IsRequired();
+                entity.Property(u => u.Email)
+                    .HasColumnName("user_email")
+                    .HasColumnType("character varying(254)")
+                    .HasMaxLength(254)
+                    .IsRequired();
 
-            modelBuilder.Entity<User>()
-                .Property(u => u.PasswordHash)
-                .HasColumnName("user_password_hash")
-                .IsRequired();
+                entity.Property(u => u.PasswordHash)
+                    .HasColumnName("user_password_hash")
+                    .HasColumnType("text")
+                    .IsRequired();
 
-            modelBuilder.Entity<User>()
-                .Property(u => u.IsActive)
-                .HasColumnName("user_is_active")
-                .HasDefaultValue(true)
-                .IsRequired();
+                entity.Property(u => u.IsActive)
+                    .HasColumnName("user_is_active")
+                    .HasColumnType("boolean")
+                    .HasDefaultValue(true)
+                    .IsRequired();
 
-            // UK - unique constraints
-            modelBuilder.Entity<User>()
-                .HasIndex(u => u.NIF)
-                .IsUnique()
-                .HasDatabaseName("uk_user_01_nif");
+                entity.Property(u => u.CreatedAt)
+                    .HasColumnName("user_created_at")
+                    .HasColumnType("timestamp with time zone")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                    .IsRequired();
 
-            modelBuilder.Entity<User>()
-                .HasIndex(u => u.Email)
-                .IsUnique()
-                .HasDatabaseName("uk_user_02_email");
+                // UK
+                entity.HasIndex(u => u.NIF)
+                    .IsUnique()
+                    .HasDatabaseName("uk_user_01_nif");
+
+                entity.HasIndex(u => u.Email)
+                    .IsUnique()
+                    .HasDatabaseName("uk_user_02_email");
+            });
 
 
             /*************************************************************************
