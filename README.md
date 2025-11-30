@@ -1,102 +1,206 @@
-# Consilium — AI-Powered Legal Communication Platform
+# Legal System - Messaging Module Specification
 
-**Simplify communication between lawyers and clients while making legal processes easier to understand.**
+## [FEATURE] Client-Lawyer Secure Messaging
 
+As a Lawyer or Client, I want to exchange secure text messages within the application so that communication regarding legal processes is centralized, traceable, and faster than traditional email.
 
-## Tech Stack
+This feature focuses on a **Real-Time Messaging System** utilizing WebSockets. Due to strict project timelines (4-week deadline) and to ensure data integrity/traceability, this feature is strictly limited to **Create (Send)** and **Read (View)** operations. 
 
-### Frontend
-- **Angular 19** - Modern web framework with standalone components
-- **TypeScript** - Type-safe JavaScript
-- **Nginx** - Production web server (containerized)
-- **Vite** - Fast development server with HMR
+**Editing or Deleting messages is strictly prohibited** at this stage to maintain a complete, immutable audit trail of communications.
 
-### Backend
-- **ASP.NET Core 9.0** - High-performance API framework
-- **.NET SDK 9.0** - Latest .NET runtime
-- **C#** - Primary programming language
+<hr />
 
-### Database & Storage
-- **PostgreSQL 16** - Relational database
-- **Qdrant** - Vector database for AI-powered search and embeddings
+### Acceptance Criteria (AC)
 
-### DevOps & Tools
-- **Docker & Docker Compose** - Containerization
-- **Make** - Build automation
-- **Git** - Version control
+**Business**
 
-## How to run
+- [ ] **Immutable History:** Users can send messages and view past messages. Once sent, a message **cannot** be edited or deleted by the sender or the receiver.
+- [ ] **Real-Time Communication:** When a user is logged in, they must receive new messages instantly without refreshing the page.
+- [ ] **Access Control:** - [ ] Clients can only message the Lawyer responsible for their specific cases.
+    - [ ] Lawyers can message any Client they are associated with.
+- [ ] **Chronological Order:** Messages must be displayed in strict chronological order (oldest at top, newest at bottom).
+- [ ] **Visual Distinction:** The UI must clearly distinguish between "My Messages" (aligned right/distinct color) and "Received Messages" (aligned left).
 
-### Prerequisites
+**Tech**
 
-Make sure you have installed:
-- **Docker** and **Docker Compose**
-- **Make** (optional, for convenience commands)
+- [ ] **WebSocket Implementation:** - [ ] The WebSocket connection must be initialized immediately upon a successful User Login.
+    - [ ] The connection must be authenticated (using the user's JWT or session token).
+- [ ] **Persistence:** All messages must be persisted to the database (SQL/NoSQL) to ensure history is available across sessions.
+- [ ] **Data Model:** The Message entity must contain: `SenderID`, `ReceiverID`, `Timestamp`, `Content`, and `RelatedProcessID` (optional, if context is needed).
+- [ ] **Endpoint Security:** REST endpoints (for history) and WS events must validate that the `Sender` and `Receiver` have a valid relationship.
 
-### Quick Start - Production
+<hr />
 
-```bash
-# Clone the repository
-git clone https://github.com/MESW-LES-2025/C.git
-cd C
+### Definition of Ready (DoR)
 
-# Build and start all services
-make run-prod
+**Business**
 
-# Check if everything is running
-make status
-```
+- [ ] **Traceability:** This Feature is new and has no upstream dependencies, but relates to the User Management module (requires active Users).
+- [ ] **Scope Limitation:** The restriction to "Create/Read Only" is formally accepted by the PO and stakeholders.
+- [ ] **Decomposition:** The Feature is broken down into atomic User Stories:
+    > - [ ] Send New Message;
+    > - [ ] View Conversation History;
+    > - [ ] Real-time Reception (WebSocket Client);
+- [ ] **Design:** Wireframes for the Chat Window (floating or dedicated page) are approved.
 
-**Access the application:**
-- Frontend: http://localhost:4200
-- Backend API: http://localhost:8080/
-- Qdrant: http://localhost:6333
+**Tech**
 
-### Quick Start - Development (with hot reload)
+- [ ] **Architecture Decision:** The specific WebSocket library (e.g., Socket.io, SignalR, or native WS) is selected.
+- [ ] **DB Schema:** The `MESSAGE` table/collection schema is defined.
 
-```bash
-# Start development environment
-make run-dev
+<hr />
 
-# Check status
-make status-dev
+### Definition of Done (DoD)
 
-# View logs
-make logs-dev
-```
+**Business**
 
-**Development servers:**
-- Frontend (with HMR): http://localhost:4200
-- Backend (with dotnet watch): http://localhost:8080/weatherforecast
+- [ ] All User Stories are implemented.
+- [ ] Lawyers and Clients can successfully exchange messages in real-time.
+- [ ] History loads correctly for offline messages.
+- [ ] User-facing documentation mentions that messages cannot be deleted for legal security reasons.
 
-### Available Commands
+**Tech**
 
-```bash
-make help              # Show all available commands
-make status            # Check if services are running (prod)
-make status-dev        # Check if services are running (dev)
-make logs-prod         # View production logs
-make logs-dev          # View development logs
-make down-prod         # Stop production environment
-make down-dev          # Stop development environment
-make restart-prod      # Rebuild and restart production
-make restart-dev       # Rebuild and restart development
-```
+- [ ] Unit tests cover 75% of messaging logic.
+- [ ] Integration tests validate the flow: Login -> Connect WS -> Send -> Receive -> Persist.
+- [ ] Load testing: Basic validation that the WS server handles concurrent connections.
+- [ ] Deployed to Staging/QA.
 
-### Stopping the Application
+---
 
-```bash
-# Stop production
-make down-prod
+## [US] Messaging - Send New Message
 
-# Stop development
-make down-dev
-```
+As a logged-in user (Lawyer or Client), I want to send a text message to a specific recipient so that I can provide updates or ask questions immediately.
 
-## Team 
+<hr />
 
-To add
+### Acceptance Criteria (AC)
 
-## Wiki
+**Business**
 
-For any information about the project, check our wiki ![here](https://github.com/MESW-LES-2025/C/wiki)!
+- [ ] **Input Validation:** The message cannot be empty or consist only of whitespace.
+- [ ] **Sending Action:** Upon clicking "Send" (or pressing Enter), the message is transmitted immediately.
+- [ ] **Feedback:** The user sees a visual indicator (e.g., message appears in the chat list immediately) confirming the send action.
+- [ ] **Constraint:** The user cannot delete or edit the message after sending.
+
+**Tech**
+
+- [ ] **WebSocket Event:** The client emits a `sendMessage` event (or similar) via the established WebSocket connection.
+- [ ] **Server Validation:** The backend validates that the `Sender` has permission to message the `Receiver`.
+- [ ] **Persistence:** The message is saved to the database *before* or *concurrently* with being relayed to the recipient to ensure no data loss.
+- [ ] **Error Handling:** If the WebSocket connection is lost, the UI should prevent sending or show a "Reconnecting..." state.
+
+### Tasks
+- [ ] Create `POST /messages` endpoint or WS Event Handler `on('message')`.
+- [ ] Implement backend validation (User A can talk to User B).
+- [ ] Implement DB insertion logic.
+- [ ] Create Frontend UI Input component (Text area + Send Button).
+- [ ] Implement Frontend "Send" logic (emit event).
+
+<hr />
+
+### Definition of Ready (DoR)
+
+**Business**
+- [ ] Design: UI for the input area is approved.
+- [ ] Rules: Max character limit (if any) is defined.
+
+**Tech**
+- [ ] WebSocket server is set up.
+- [ ] Database `Messages` table is created.
+
+### Definition of Done (DoD)
+- [ ] Unit tests for the "Send" logic.
+- [ ] Manual test: Send message, verify it appears in DB.
+
+---
+
+## [US] Messaging - View Conversation History
+
+As a user, I want to view the full history of messages exchanged with a specific person so that I can reference past instructions and discussions.
+
+<hr />
+
+### Acceptance Criteria (AC)
+
+**Business**
+
+- [ ] **Load on Demand:** When opening a chat with a specific user, the previous message history loads automatically.
+- [ ] **Ordering:** Messages are sorted by Timestamp ASC (oldest at top).
+- [ ] **Formatting:**
+    - [ ] My messages: Right-aligned.
+    - [ ] Their messages: Left-aligned.
+    - [ ] Timestamps are visible (e.g., on hover or below text).
+- [ ] **Pagination:** If the history is long, the system loads the most recent X messages, allowing the user to scroll up to load more (Infinite Scroll).
+
+**Tech**
+
+- [ ] **REST API Endpoint:** A `GET /messages/{conversationId}` (or similar) endpoint returns the paginated list. (REST is often preferred over WS for fetching large history blocks).
+- [ ] **Performance:** The query must be indexed by `RelatedProcessID` or `Sender/Receiver` pair and `Timestamp`.
+
+### Tasks
+- [ ] Create backend query to fetch messages between two users.
+- [ ] Implement pagination (Limit/Offset or Cursor-based).
+- [ ] Create `GET` endpoint for history.
+- [ ] Create Frontend "Message Bubble" component.
+- [ ] Implement "Scroll to bottom" logic on load.
+
+<hr />
+
+### Definition of Ready (DoR)
+
+**Business**
+- [ ] UI Design for the chat window and message bubbles (sent vs received) is approved.
+
+**Tech**
+- [ ] Seed data exists in the database to test history loading.
+
+### Definition of Done (DoD)
+- [ ] Infinite scroll or "Load More" works smoothly.
+- [ ] Styling matches the approved mockups.
+
+---
+
+## [US] Messaging - Real-Time Connection & Reception
+
+As a user, I want the system to automatically connect me to the messaging service upon login and display new messages instantly, so that I don't miss urgent communications.
+
+<hr />
+
+### Acceptance Criteria (AC)
+
+**Business**
+
+- [ ] **Auto-Connect:** The chat feature becomes active immediately after the user logs into the dashboard.
+- [ ] **Instant Update:** When User A sends a message, User B (if online) sees it appear in their chat window within seconds, without refreshing the page.
+- [ ] **Notification:** If the chat window is closed/minimized within the app, a visual badge (e.g., "1 New Message") appears.
+
+**Tech**
+
+- [ ] **Socket Initialization:** The Frontend initializes the WebSocket client using the user's Auth Token.
+- [ ] **Room/Channel Logic:** On connect, the server joins the socket to a specific room (e.g., `user_{id}`) to allow targeted message delivery.
+- [ ] **Event Listening:** The client listens for `receiveMessage` events and appends the payload to the current local state/UI.
+- [ ] **Connection Handling:**
+    - [ ] Handle `disconnect` (User closes tab).
+    - [ ] Handle `reconnect` (Network blip).
+
+### Tasks
+- [ ] Configure WebSocket Server (Backend).
+- [ ] Implement JWT verification for WS connection handshake.
+- [ ] Implement Frontend WebSocket Context/Service (Global state).
+- [ ] Implement `socket.on('receive_message')` listener in Frontend.
+- [ ] Update UI state when a new message arrives.
+
+<hr />
+
+### Definition of Ready (DoR)
+
+**Business**
+- [ ] Security requirement: Only authenticated users can establish a connection.
+
+**Tech**
+- [ ] API Contract for WS events (`emit` payload and `listen` payload) is defined.
+
+### Definition of Done (DoD)
+- [ ] Validated with two different browsers (User A and User B) chatting in real-time.
+- [ ] Verify that no messages are lost if the user is online.
