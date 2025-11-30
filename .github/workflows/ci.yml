@@ -1,0 +1,109 @@
+name: CI - Tests & Coverage
+
+on:
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  backend-tests:
+    name: Backend Tests & Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.x'
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bc
+
+      - name: Restore .NET
+        run: dotnet restore C.sln
+
+      - name: Run backend tests with XPlat coverage
+        run: |
+          dotnet test src/Consilium.Tests/Consilium.Tests.csproj --collect:"XPlat Code Coverage" --verbosity minimal --logger "trx;LogFileName=TestResults.trx" --results-directory src/TestResults --settings src/coverlet.runsettings || exit 1
+
+      - name: Find backend coverage file
+        id: backend-find
+        run: |
+          COV_FILE=$(find src -type f -name 'coverage.cobertura.xml' -print -quit || true)
+          if [ -z "$COV_FILE" ]; then echo "coverage_file=" > $GITHUB_OUTPUT; exit 1; fi
+          echo "coverage_file=$COV_FILE" >> $GITHUB_OUTPUT
+
+      - name: Upload backend coverage XML
+        if: steps.backend-find.outputs.coverage_file != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-xml
+          path: ${{ steps.backend-find.outputs.coverage_file }}
+
+      - name: Check backend coverage >= 75%
+        run: |
+          COV_FILE=${{ steps.backend-find.outputs.coverage_file }}
+          if [ -z "$COV_FILE" ]; then echo "coverage file not found"; exit 1; fi
+          LINE_RATE=$(grep -m1 '<coverage ' "$COV_FILE" | sed -n 's/.*line-rate="\([0-9.]*\)".*/\1/p')
+          PERCENT=$(awk -v lr="$LINE_RATE" 'BEGIN{printf "%0.2f", lr * 100}')
+          echo "Backend coverage is $PERCENT%"
+          if [ $(echo "$LINE_RATE < 0.75" | bc -l) -eq 1 ]; then echo "Backend coverage below 75%"; exit 1; fi
+
+  frontend-tests:
+    name: Frontend Tests & Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install frontend dependencies
+        run: |
+          cd src/frontend
+          npm ci
+      - name: Install bc
+        run: sudo apt-get update && sudo apt-get install -y bc
+
+      - name: Run frontend tests with coverage (capture log)
+        run: |
+          cd src/frontend
+          npm ci
+          npm test -- --watch=false --browsers=ChromeHeadless --code-coverage 2>&1 | tee /tmp/frontend-tests.log || exit 1
+
+      - name: Upload frontend coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-files
+          path: src/frontend/coverage
+
+      - name: Extract and check frontend coverage >= 75%
+        run: |
+          LOG=/tmp/frontend-tests.log
+          if [ ! -f "$LOG" ]; then echo "Test log not present"; exit 1; fi
+          PCT=$(grep -Eo "Lines\s*:\s*[0-9]+\.?[0-9]*%" $LOG | head -n 1 | sed 's/[^0-9.]//g')
+          if [ -z "$PCT" ]; then echo "Failed to parse frontend coverage from log"; exit 1; fi
+          echo "Frontend coverage is $PCT%"
+          if [ $(echo "$PCT < 75" | bc -l) -eq 1 ]; then echo "Frontend coverage below 75%"; exit 1; fi
+
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          echo "Backend: ${{ needs.backend-tests.result }}"
+          echo "Frontend: ${{ needs.frontend-tests.result }}"
+          if [ "${{ needs.backend-tests.result }}" != "success" ] || [ "${{ needs.frontend-tests.result }}" != "success" ]; then
+            echo "❌ CI Failed"
+            exit 1
+          else
+            echo "✅ CI Passed"
+          fi
