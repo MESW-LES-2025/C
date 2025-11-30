@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -13,25 +15,26 @@ namespace Consilium.Domain.Models
         [Column("user_name")]
         [Required]
         [StringLength(254)]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; set; } = null!;
 
         [Column("user_nif")]
         [Required]
         [StringLength(9)]
-        public string NIF { get; set; } = string.Empty;
+        public string NIF { get; set; } = null!;
 
         [Column("user_email")]
         [Required]
         [StringLength(254)]
-        public string Email { get; set; } = string.Empty;
+        public string Email { get; set; } = null!;
 
         [Column("user_password_hash")]
         [Required]
-        public string PasswordHash { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } = null!;
 
         [Column("user_is_active")]
         [Required]
         public bool IsActive { get; set; } = true;
+
 
         // Navigation properties
         public Client? Client { get; set; }
