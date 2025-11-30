@@ -1,9 +1,6 @@
 name: Security Scanning
 
 on:
-  push:
-    branches:
-      - '**'  # Run on push to any branch
   pull_request:
     branches:
       - '**'
