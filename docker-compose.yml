@@ -19,16 +19,17 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       target: build-frontend-prod
+      args:
+        CONFIGURATION: ${FRONTEND_CONFIG:-production}
     ports:
       - "4200:80"
-
-  #qdrant:
-   # image: qdrant/qdrant:latest
-   # restart: always
-   # ports:
+    #qdrant:
+    # image: qdrant/qdrant:latest
+    # restart: always
+    # ports:
     #  - "6333:6333"
     #volumes:
-     # - qdrant_data:/qdrant/storage
+    # - qdrant_data:/qdrant/storage
 
 volumes:
   qdrant_data:
