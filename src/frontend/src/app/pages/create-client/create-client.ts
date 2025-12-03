@@ -7,6 +7,7 @@ import { ButtonComponent } from '../../shared/button/button';
 import { PhoneInputComponent } from '../../shared/phone-input/phone-input';
 import { ClientService } from '../../services/client.service';
 import { NotificationService } from '../../shared/notification/notification.service';
+import { ConfirmModalComponent } from '../../shared/confirm-modal/confirm-modal';
 import { formatAddress } from '../../shared/address.util';
 import {
   sanitizeModel,
@@ -22,7 +23,14 @@ import { Client } from '../../models/client';
   standalone: true,
   templateUrl: './create-client.html',
   styleUrls: ['./create-client.css'],
-  imports: [CommonModule, FormsModule, PageTitleComponent, ButtonComponent, PhoneInputComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    PageTitleComponent,
+    ButtonComponent,
+    PhoneInputComponent,
+    ConfirmModalComponent,
+  ],
 })
 export class CreateClientComponent {
   model: Partial<
@@ -55,6 +63,7 @@ export class CreateClientComponent {
   // server-side validation errors per field
   fieldErrors: Record<string, string[]> = {};
   generalError = '';
+  showCancelModal = false;
 
   constructor(
     private clientService: ClientService,
@@ -181,5 +190,18 @@ export class CreateClientComponent {
   }
   get isNifValid() {
     return isValidNif(this.model.nif || '');
+  }
+
+  onCancelClick() {
+    this.showCancelModal = true;
+  }
+
+  onConfirmCancel() {
+    this.showCancelModal = false;
+    this.router.navigate(['/clients']);
+  }
+
+  onCloseModal() {
+    this.showCancelModal = false;
   }
 }

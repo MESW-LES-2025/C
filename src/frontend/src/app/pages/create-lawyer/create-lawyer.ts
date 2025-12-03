@@ -7,6 +7,7 @@ import { ButtonComponent } from '../../shared/button/button';
 import { PhoneInputComponent } from '../../shared/phone-input/phone-input';
 import { LawyerService } from '../../services/lawyer.service';
 import { NotificationService } from '../../shared/notification/notification.service';
+import { ConfirmModalComponent } from '../../shared/confirm-modal/confirm-modal';
 import {
   sanitizeModel,
   isValidEmail,
@@ -21,7 +22,14 @@ import { Lawyer } from '../../models/lawyer';
   standalone: true,
   templateUrl: './create-lawyer.html',
   styleUrls: ['./create-lawyer.css'],
-  imports: [CommonModule, FormsModule, PageTitleComponent, ButtonComponent, PhoneInputComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    PageTitleComponent,
+    ButtonComponent,
+    PhoneInputComponent,
+    ConfirmModalComponent,
+  ],
 })
 export class CreateLawyerComponent {
   model: Partial<
@@ -41,6 +49,7 @@ export class CreateLawyerComponent {
   submitting = false;
   fieldErrors: Record<string, string[]> = {};
   generalError = '';
+  showCancelModal = false;
 
   constructor(
     private lawyerService: LawyerService,
@@ -144,5 +153,18 @@ export class CreateLawyerComponent {
   }
   get isRegisterNumberValid() {
     return isValidRegisterNumber(this.model.professionalRegister || '');
+  }
+
+  onCancelClick() {
+    this.showCancelModal = true;
+  }
+
+  onConfirmCancel() {
+    this.showCancelModal = false;
+    this.router.navigate(['/lawyers']);
+  }
+
+  onCloseModal() {
+    this.showCancelModal = false;
   }
 }

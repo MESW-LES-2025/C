@@ -7,6 +7,7 @@ import { PageTitleComponent } from '../../shared/page-title/page-title';
 import { ButtonComponent } from '../../shared/button/button';
 import { ClientService } from '../../services/client.service';
 import { NotificationService } from '../../shared/notification/notification.service';
+import { ConfirmModalComponent } from '../../shared/confirm-modal/confirm-modal';
 import { parseAddress, formatAddress } from '../../shared/address.util';
 import {
   sanitizeModel,
@@ -23,7 +24,14 @@ import { PhoneInputComponent } from '../../shared/phone-input/phone-input';
   standalone: true,
   templateUrl: './edit-client.html',
   styleUrls: ['./edit-client.css', '../create-client/create-client.css'],
-  imports: [CommonModule, FormsModule, PageTitleComponent, ButtonComponent, PhoneInputComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    PageTitleComponent,
+    ButtonComponent,
+    PhoneInputComponent,
+    ConfirmModalComponent,
+  ],
 })
 export class EditClientComponent implements OnInit {
   // toggle applies to model immediately; save persists via Save button
@@ -58,6 +66,7 @@ export class EditClientComponent implements OnInit {
   submitting = false;
   fieldErrors: Record<string, string[]> = {};
   generalError = '';
+  showCancelModal = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -240,5 +249,18 @@ export class EditClientComponent implements OnInit {
         this.submitting = false;
       },
     });
+  }
+
+  onCancelClick() {
+    this.showCancelModal = true;
+  }
+
+  onConfirmCancel() {
+    this.showCancelModal = false;
+    this.router.navigate(['/clients']);
+  }
+
+  onCloseModal() {
+    this.showCancelModal = false;
   }
 }

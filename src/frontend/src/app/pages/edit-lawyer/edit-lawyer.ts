@@ -7,6 +7,7 @@ import { PageTitleComponent } from '../../shared/page-title/page-title';
 import { ButtonComponent } from '../../shared/button/button';
 import { LawyerService } from '../../services/lawyer.service';
 import { NotificationService } from '../../shared/notification/notification.service';
+import { ConfirmModalComponent } from '../../shared/confirm-modal/confirm-modal';
 import {
   sanitizeModel,
   sanitizeString,
@@ -23,7 +24,14 @@ import { PhoneInputComponent } from '../../shared/phone-input/phone-input';
   standalone: true,
   templateUrl: './edit-lawyer.html',
   styleUrls: ['./edit-lawyer.css', '../create-client/create-client.css'],
-  imports: [CommonModule, FormsModule, PageTitleComponent, ButtonComponent, PhoneInputComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    PageTitleComponent,
+    ButtonComponent,
+    PhoneInputComponent,
+    ConfirmModalComponent,
+  ],
 })
 export class EditLawyerComponent implements OnInit {
   id: string | null = null;
@@ -46,6 +54,7 @@ export class EditLawyerComponent implements OnInit {
   submitting = false;
   fieldErrors: Record<string, string[]> = {};
   generalError = '';
+  showCancelModal = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -207,5 +216,18 @@ export class EditLawyerComponent implements OnInit {
         this.submitting = false;
       },
     });
+  }
+
+  onCancelClick() {
+    this.showCancelModal = true;
+  }
+
+  onConfirmCancel() {
+    this.showCancelModal = false;
+    this.router.navigate(['/lawyers']);
+  }
+
+  onCloseModal() {
+    this.showCancelModal = false;
   }
 }

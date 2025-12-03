@@ -2,11 +2,7 @@
   <div class="page-header">
     <app-page-title title="Create Client"></app-page-title>
     <div class="page-actions">
-      <app-button
-        label="Cancel"
-        variant="secondary"
-        (click)="router.navigate(['/clients'])"
-      ></app-button>
+      <app-button label="Cancel" variant="secondary" (click)="onCancelClick()"></app-button>
       <app-button
         label="Create Client"
         [disabled]="!isComplete() || submitting"
@@ -203,3 +199,14 @@
     </div>
   </form>
 </section>
+
+<app-confirm-modal
+  *ngIf="showCancelModal"
+  title="Cancel Creation"
+  message="Are you sure you want to cancel? Any unsaved changes will be lost."
+  confirmLabel="Yes, Cancel"
+  cancelLabel="No, Keep Editing"
+  [danger]="true"
+  (confirm)="onConfirmCancel()"
+  (cancel)="onCloseModal()"
+></app-confirm-modal>
