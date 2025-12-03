@@ -52,4 +52,7 @@ BEGIN
         (2, 'Update'),
         (3, 'Delete');
 
+    -- Reset sequence to avoid conflicts with future inserts
+    PERFORM setval('CORE.ACTION_LOG_TYPE_ACTION_LOG_TYPE_ID_SEQ', 3, TRUE);
+
 END $$;
