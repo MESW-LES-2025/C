@@ -1,152 +1,159 @@
--- ==============================================================================
--- PASSO 1.0 - LIMPEZA E CRIAÇÃO DO SCHEMA (IDEMPOTÊNCIA GARANTIDA)
--- ==============================================================================
+--- ==============================================================================
+--- PASSO 1.0 - LIMPEZA E CRIAÇÃO DO SCHEMA (IDEMPOTÊNCIA GARANTIDA)
+--- ==============================================================================
+
 DROP SCHEMA IF EXISTS CORE CASCADE;
 CREATE SCHEMA CORE;
 
--- ==============================================================================
--- PASSO 2.0 - TABELAS DE REFERÊNCIA (LOOKUP TABLES)
--- ==============================================================================
-
-
--- ==============================================================================
--- PASSO 2.1 - TABELA: ACTION_LOG_TYPES (TIPOS DE AÇÃO PARA O LOG)
--- ==============================================================================
-CREATE TABLE CORE.ACTION_LOG_TYPES (
+--- ==============================================================================
+--- PASSO 2.1 - TABELA: ACTION_LOG_TYPES (TIPOS DE AÇÃO PARA O LOG)
+--- ==============================================================================
+CREATE TABLE CORE.ACTION_LOG_TYPE (
     ACTION_LOG_TYPE_ID SERIAL NOT NULL,
-    ACTION_LOG_TYPES_NOME VARCHAR(50) NOT NULL,
+    ACTION_LOG_TYPE_NAME VARCHAR(100) NOT NULL,
+
+    -- PRIMARY KEY
+    CONSTRAINT PK_ACTION_LOG_TYPE PRIMARY KEY (ACTION_LOG_TYPE_ID),
+    -- UNIQUE CONSTRAINT
+    CONSTRAINT UK_ACTION_LOG_TYPE_01 UNIQUE (ACTION_LOG_TYPE_NAME)
+);
+
+--- ==============================================================================
+--- PASSO 2.2 - TABELA: USER (TABELA DA CLASSE ABSTRATA USUÁRIOS DO SISTEMA)
+--- ==============================================================================
+CREATE TABLE CORE.USER (
+    USER_ID UUID NOT NULL,
+    USER_NAME VARCHAR(254) NOT NULL,
+    USER_NIF CHAR(9) NOT NULL,
+    USER_EMAIL VARCHAR(254) NOT NULL,
+    USER_PASSWORD_HASH TEXT NOT NULL,
+    USER_IS_ACTIVE BOOLEAN NOT NULL DEFAULT TRUE,
+
+    -- PRIMARY KEY
+    CONSTRAINT PK_USER PRIMARY KEY (USER_ID),
     
-    -- PRIMARY KEY
-    CONSTRAINT PK_ACTION_LOG_TYPE PRIMARY KEY (ACTION_LOG_TYPE_ID)
+    -- UNIQUE CONSTRAINT
+    CONSTRAINT UK_USER_01_NIF UNIQUE (USER_NIF),
+    CONSTRAINT UK_USER_02_EMAIL UNIQUE (USER_EMAIL)
 );
 
--- ==============================================================================
--- PASSO 2.2 - TABELA: PERSON (TABELA DA CLASSE ABSTRATA USUÁRIOS DO SISTEMA)
--- ==============================================================================
-CREATE TABLE CORE.PERSON (
-    PERSON_ID UUID NOT NULL,
-    PERSON_NAME VARCHAR(100) NOT NULL,
-    PERSON_NIF VARCHAR(9) NOT NULL,
-    PERSON_EMAIL VARCHAR(100) NOT NULL,
-    PERSON_PASSWORD_HASH VARCHAR(255) NOT NULL,
-    PERSON_ACTIVE BOOLEAN DEFAULT TRUE,
+--- ==============================================================================
+--- PASSO 2.3 - TABELA DE LOG
+--- ==============================================================================
+CREATE TABLE CORE.USER_LOG (
+    USER_LOG_ID UUID NOT NULL,
+    AFFECTED_USER_ID UUID,
+    UPDATED_BY_ID UUID,
+    USER_LOG_UPDATED_AT TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    USER_LOG_OLD_VALUE JSONB NOT NULL,
+    USER_LOG_NEW_VALUE JSONB NOT NULL,
+    ACTION_LOG_TYPE_ID INTEGER,
 
     -- PRIMARY KEY
-    CONSTRAINT PK_PERSON PRIMARY KEY (PERSON_ID),
-
-    -- UNIQUE KEYS
-    CONSTRAINT UK_PERSON_01 UNIQUE (PERSON_NIF),
-    CONSTRAINT UK_PERSON_02 UNIQUE (PERSON_EMAIL)
+    CONSTRAINT PK_USER_LOG PRIMARY KEY (USER_LOG_ID),
+    
+    -- FOREIGN KEY
+    CONSTRAINT FK_USER_LOG_AFFECTED_USER_01 FOREIGN KEY (AFFECTED_USER_ID) 
+        REFERENCES CORE.USER (USER_ID) ON DELETE SET NULL,
+    CONSTRAINT FK_USER_LOG_UPDATED_BY_01 FOREIGN KEY (UPDATED_BY_ID) 
+        REFERENCES CORE.USER (USER_ID) ON DELETE SET NULL
 );
 
 
 -- ==============================================================================
--- PASSO 2.3 - TABELA DE LOG
+-- PASSO 2.3.1 - ÍNDICES DAS FKs DA TABELA  USER_LOG
 -- ==============================================================================
-CREATE TABLE CORE.PERSON_LOG (
-    PERSON_LOG_ID BIGSERIAL NOT NULL,
-    PERSON_LOG_OLD_VALUE JSONB NOT NULL,
-    PERSON_LOG_NEW_VALUE JSONB NOT NULL,
-    PERSON_LOG_UPDATED_AT TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PERSON_ID UUID NOT NULL,
-    PERSON_LOG_UPDATED_BY UUID NOT NULL,
-    ACTION_LOG_TYPE_ID INT NOT NULL,
+CREATE INDEX IDX_USER_LOG_01 ON CORE.USER_LOG(AFFECTED_USER_ID);
+CREATE INDEX IDX_USER_LOG_02 ON CORE.USER_LOG(UPDATED_BY_ID);
+CREATE INDEX IDX_USER_LOG_03 ON CORE.USER_LOG(ACTION_LOG_TYPE_ID);
 
-    -- PRIMARY KEY
-    CONSTRAINT PK_PERSON_LOG PRIMARY KEY (PERSON_LOG_ID),
 
-    -- FOREIGN KEYS
-    CONSTRAINT FK_PERSON_LOG_01 FOREIGN KEY (PERSON_ID)
-        REFERENCES CORE.PERSON (PERSON_ID),
-    CONSTRAINT FK_PERSON_LOG_02 FOREIGN KEY (ACTION_LOG_TYPE_ID)
-        REFERENCES CORE.ACTION_LOG_TYPES (ACTION_LOG_TYPE_ID),
-    CONSTRAINT FK_PERSON_LOG_03 FOREIGN KEY (PERSON_LOG_UPDATED_BY)
-        REFERENCES CORE.PERSON (PERSON_ID)
-);
-
--- ==============================================================================
--- PASSO 2.3.1 - ÍNDICES DAS FKs DA TABELA  PERSON_LOG
--- ==============================================================================
-CREATE INDEX IDX_PERSON_LOG_01 ON CORE.PERSON_LOG(PERSON_ID);
-CREATE INDEX IDX_PERSON_LOG_02 ON CORE.PERSON_LOG(ACTION_LOG_TYPE_ID);
-CREATE INDEX IDX_PERSON_LOG_03 ON CORE.PERSON_LOG(PERSON_LOG_UPDATED_BY);
-
--- ==============================================================================
--- PASSO 2.4 - TABELA DE PHONE
--- ==============================================================================
-CREATE TABLE CORE.PHONE(
-    PHONE_ID SERIAL NOT NULL,
-    PHONE_COUNTRY_CODE VARCHAR(5) NOT NULL DEFAULT '+351',
-    PHONE_NUMBER VARCHAR(15) NOT NULL,
-    PERSON_ID UUID NOT NULL,
+--- ==============================================================================
+--- PASSO 2.4 - TABELA DE PHONE
+--- ==============================================================================
+CREATE TABLE CORE.PHONE (
+    PHONE_ID UUID NOT NULL,
+    FK_USER_ID UUID NOT NULL,
+    PHONE_COUNTRY_CODE SMALLINT NOT NULL DEFAULT 351,
+    PHONE_NUMBER VARCHAR(20) NOT NULL,
+    PHONE_IS_MAIN BOOLEAN NOT NULL DEFAULT TRUE,
 
     -- PRIMARY KEY
     CONSTRAINT PK_PHONE PRIMARY KEY (PHONE_ID),
-
-    -- UNIQUE
-    -- NOT REQUIRED DUE TO THE RELATIONSHIP IS 1:1
-
+    
+    -- UNIQUE CONSTRAINT
+    CONSTRAINT UK_PHONE_01_USER_NUMBER UNIQUE (FK_USER_ID, PHONE_COUNTRY_CODE, PHONE_NUMBER),
+    
     -- FOREIGN KEY
-    CONSTRAINT FK_PHONE_01 FOREIGN KEY (PERSON_ID)
-        REFERENCES CORE.PERSON (PERSON_ID)
+    CONSTRAINT FK_PHONE_USER_01 FOREIGN KEY (FK_USER_ID) 
+        REFERENCES CORE.USER (USER_ID) ON DELETE CASCADE
 );
 
 -- ==============================================================================
 -- PASSO 2.4.1 - ÍNDICES DAS FKs DA TABELA  PHONE
 -- ==============================================================================
-CREATE INDEX IDX_PHONE_01 ON CORE.PHONE(PERSON_ID);
+CREATE INDEX IDX_PHONE_01 ON CORE.PHONE(FK_USER_ID);
 
-
--- ==============================================================================
--- PASSO 2.5 - TABELA DE ADDRESS
--- ==============================================================================
-CREATE TABLE CORE.ADDRESS(
-    ADDRESS_ID SERIAL NOT NULL,
-    ADDRESS_ZIPCODE VARCHAR(8) NOT NULL,
-    ADDRESS_COUNTRY CHAR(3) NOT NULL DEFAULT 'PRT',
-    ADDRESS_STATE VARCHAR(100) NOT NULL,
-    ADDRESS_CITY VARCHAR(100) NOT NULL,
-    ADDRESS_SUB_LOCALITY VARCHAR(100), -- FREGUESIA
-    ADDRESS_STREET VARCHAR(150) NOT NULL,
-    ADDRESS_NUMBER VARCHAR(50) NOT NULL,
-    ADDRESS_COMPLEMENT VARCHAR(50),
-    PERSON_ID UUID NOT NULL,
+--- ==============================================================================
+--- PASSO 2.5 - TABELA: CLIENT
+--- ==============================================================================
+CREATE TABLE CORE.CLIENT (
+    CLIENT_ID UUID NOT NULL,
+    CLIENT_ADDRESS VARCHAR(500) NOT NULL,
 
     -- PRIMARY KEY
-    CONSTRAINT PK_ADDRESS PRIMARY KEY (ADDRESS_ID),
-
-    -- UNIQUE
-    -- NOT REQUIRED DUE TO THE RELATIONSHIP IS 1:1
-
-    -- FOREIGN KEY
-    CONSTRAINT FK_ADDRESS_01 FOREIGN KEY (PERSON_ID)
-        REFERENCES CORE.PERSON (PERSON_ID)
-);
-
--- ==============================================================================
--- PASSO 2.5.1 - ÍNDICES DAS FKs DA TABELA  PHONE
--- ==============================================================================
-CREATE INDEX IDX_ADDRESS_01 ON CORE.ADDRESS(PERSON_ID);
-
--- ==============================================================================
--- PASSO 2.6 - TABELA DE ADDRESS
--- ==============================================================================
-
-CREATE TABLE CORE.CLIENT(
-    CLIENT_ID UUID NOT NULL,
-
-    -- PFIMARY KEY
     CONSTRAINT PK_CLIENT PRIMARY KEY (CLIENT_ID),
 
-    -- UNIQUE
-    -- NOT REQUIRED
-
     -- FOREIGN KEY
-    CONSTRAINT FK_CLIENT_01 FOREIGN KEY (CLIENT_ID)
-        REFERENCES CORE.PERSON (PERSON_ID)
+    CONSTRAINT FK_CLIENT_USER_01 FOREIGN KEY (CLIENT_ID) 
+        REFERENCES CORE.USER (USER_ID) ON DELETE CASCADE
 );
 
--- ==============================================================================
--- PASSO 2.6.1 - ÍNDICES DAS FKs DA TABELA CLIENT
--- ==============================================================================
+--- ==============================================================================
+--- PASSO 2.5.1 - ÍNDICES DAS FKs DA TABELA  CLIENT
+--- ==============================================================================
 CREATE INDEX IDX_CLIENT_01 ON CORE.CLIENT(CLIENT_ID);
+
+--- ==============================================================================
+--- PASSO 2.6 - TABELA: LAWYER
+--- ==============================================================================
+CREATE TABLE CORE.LAWYER (
+    LAWYER_ID UUID NOT NULL,
+    LAWYER_PROFESSIONAL_REGISTER VARCHAR(20) NOT NULL,
+
+    -- PRIMARY KEY
+    CONSTRAINT PK_LAWYER PRIMARY KEY (LAWYER_ID),
+
+    -- UNIQUE CONSTRAINT
+    CONSTRAINT UK_LAWYER_01_REGISTER UNIQUE (LAWYER_PROFESSIONAL_REGISTER),
+
+    -- FOREIGN KEY
+    CONSTRAINT FK_LAWYER_USER_01 FOREIGN KEY (LAWYER_ID) 
+        REFERENCES CORE.USER (USER_ID) ON DELETE CASCADE
+);  
+
+--- ============================================================================== 
+--- PASSO 2.6.1 - ÍNDICES DAS FKs DA TABELA  LAWYER
+--- ============================================================================== 
+CREATE INDEX IDX_LAWYER_01 ON CORE.LAWYER(LAWYER_ID);
+
+
+--- ============================================================================== 
+--- PASSO 2.7 - TABELA: ADMIN
+--- ============================================================================== 
+CREATE TABLE CORE.ADMIN (
+    ADMIN_ID UUID NOT NULL,
+    ADMIN_STARTED_AT TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    -- PRIMARY KEY
+    CONSTRAINT PK_ADMIN PRIMARY KEY (ADMIN_ID),
+
+    -- FOREIGN KEY
+    CONSTRAINT FK_ADMIN_USER_01 FOREIGN KEY (ADMIN_ID) 
+        REFERENCES CORE.USER (USER_ID) ON DELETE CASCADE
+);
+
+-- ============================================================================== 
+-- PASSO 2.7.1 - ÍNDICES DAS FKs DA TABELA  ADMIN
+-- ============================================================================== 
+CREATE INDEX IDX_ADMIN_01 ON CORE.ADMIN(ADMIN_ID);  

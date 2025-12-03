@@ -15,6 +15,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 // 1. Global Configurations
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -99,7 +101,31 @@ ConfigureSwagger(builder.Services);
 builder.Services.AddAntiforgery();
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    options.AddDefaultPolicy(policy => 
+        policy.WithOrigins(
+            "http://localhost:4200", 
+            "https://consilium-web-staging.onrender.com", 
+            "https://consilium-web-prod-ea6s.onrender.com")
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+    );
+});
+
+// 10. Rate Limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 100,
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1)
+            }));
 });
 
 var app = builder.Build();
@@ -119,7 +145,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 app.UseAntiforgery();
-
+app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

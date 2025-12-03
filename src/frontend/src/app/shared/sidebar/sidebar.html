@@ -24,19 +24,19 @@
           <span class="label">ChatBot</span>
         </a>
       </li>
-      <li>
+      <li *ngIf="hasRole(['Admin', 'Lawyer'])">
         <a routerLink="/lawyers" routerLinkActive="active">
           <i class="fa-solid fa-gavel icon" aria-hidden="true"></i>
           <span class="label">Lawyers</span>
         </a>
       </li>
-      <li>
+      <li *ngIf="hasRole(['Admin', 'Lawyer'])">
         <a routerLink="/clients" routerLinkActive="active">
           <i class="fa-solid fa-users icon" aria-hidden="true"></i>
           <span class="label">Clients</span>
         </a>
       </li>
-      <li>
+      <li *ngIf="hasRole(['Admin', 'Lawyer','Client'])">
         <a routerLink="/cases" routerLinkActive="active">
           <i class="fa-solid fa-folder-open icon" aria-hidden="true"></i>
           <span class="label">Processes</span>
