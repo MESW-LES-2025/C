@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { LawyerService } from '../../services/lawyer.service';
+import { ClientService } from '../../services/client.service';
 import { PaginationComponent } from '../../shared/pagination/pagination';
 
 @Component({
@@ -18,6 +19,7 @@ import { PaginationComponent } from '../../shared/pagination/pagination';
 export class ProcessesLawyerComponent {
   private router = inject(Router);
   private lawyerService = inject(LawyerService);
+  private clientService = inject(ClientService);
   private auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   
@@ -37,6 +39,15 @@ export class ProcessesLawyerComponent {
     this.lawyerService.getProcessesByLawyer(id, page).subscribe({
       next: (res) => {
         this.processes = [...(res.data ?? [])];
+
+        this.processes.forEach((p) => {
+          if (p.clientId) {
+            this.clientService.getClient(p.clientId).subscribe(clientRes => {
+              p.clientName = clientRes?.name ?? 'Unknown Client';
+              this.cdr.detectChanges();
+            });
+          }
+        });
 
         const totalCount = res.meta?.totalCount ?? 0;
         const limit = res.meta?.limit ?? 20;

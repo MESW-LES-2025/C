@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PageTitleComponent } from '../../shared/page-title/page-title';
 import { ClientService } from '../../services/client.service';
-import { ButtonComponent } from '../../shared/button/button';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { PaginationComponent } from '../../shared/pagination/pagination';
@@ -13,7 +12,7 @@ import { PaginationComponent } from '../../shared/pagination/pagination';
   standalone: true,
   templateUrl: './processes-client.html',
   styleUrls: ['./processes-client.css'],
-  imports: [PageTitleComponent, ButtonComponent, FormsModule, CommonModule, PaginationComponent]
+  imports: [PageTitleComponent, FormsModule, CommonModule, PaginationComponent]
 })
 export class ProcessesClientComponent {
 

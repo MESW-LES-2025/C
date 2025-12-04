@@ -48,12 +48,12 @@
       <div class="client-info">
         <div class="client-main">
           <div class="client-left">
-            <p class="client-name">{{ c.clientId }}</p>
+            <p class="client-name">{{ c.clientName || 'Loading...' }}</p>
             <!-- <p class="client-location">{{ c.clientLocation }}</p> -->
           </div>
 
           <div class="client-avatar">
-            <!--<span>{{ getInitials(c.clientName) }}</span> -->
+            <span>{{ getInitials(c.clientName) }}</span>
           </div>
         </div>
 
