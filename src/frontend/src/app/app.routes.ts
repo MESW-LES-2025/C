@@ -14,7 +14,7 @@ import { NgModule } from '@angular/core';
 import { EditClientComponent } from './pages/edit-client/edit-client';
 import { EditLawyerComponent } from './pages/edit-lawyer/edit-lawyer';
 import { roleGuard } from './guards/role.guard';
-import { ProcessesComponent } from './pages/processes/processes';
+import { ProcessesLawyerComponent } from './pages/processes-lawyer/processes-lawyer';
 
 export const routes: Routes = [
   { path: '', component: LoginComponent, title: 'Login' },
@@ -63,12 +63,19 @@ export const routes: Routes = [
   },
   { path: 'chatbot', component: ChatbotComponent, title: 'ChatBot', canActivate: [roleGuard] },
   {
-    path: 'processes',
-    component: ProcessesComponent,
-    title: 'Processes',
+    path: 'processes/lawyer',
+    component: ProcessesLawyerComponent,
+    title: 'Processes (Lawyer)',
     canActivate: [roleGuard],
-    data: { roles: ['Admin', 'Lawyer', 'Client'] },
+    data: { roles: ['Lawyer', 'Admin'] },
   },
+  /*{
+    path: 'processes/client',
+    component: ProcessesClientComponent,
+    title: 'Processes (Client)',
+    canActivate: [roleGuard],
+    data: { roles: ['Client'] },
+  },*/
   { path: 'profiles', component: ProfilesComponent, title: 'Profiles', canActivate: [roleGuard] },
   { path: 'settings', component: SettingsComponent, title: 'Settings', canActivate: [roleGuard] },
   {

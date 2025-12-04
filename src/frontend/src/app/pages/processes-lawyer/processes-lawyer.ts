@@ -9,11 +9,11 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-processes',
   standalone: true,
-  templateUrl: './processes.html',
-  styleUrls: ['./processes.css'],
+  templateUrl: './processes-lawyer.html',
+  styleUrls: ['./processes-lawyer.css'],
   imports: [PageTitleComponent, ButtonComponent, FormsModule, CommonModule, PaginationComponent]
 })
-export class ProcessesComponent {
+export class ProcessesLawyerComponent {
   private router = inject(Router);
   
   processes = [
@@ -62,6 +62,6 @@ export class ProcessesComponent {
   }
 
   openProcess(id: number) {
-    this.router.navigate(['/processes', id]);
+    this.router.navigate(['/processes/lawyer', id]);
   }
 }
