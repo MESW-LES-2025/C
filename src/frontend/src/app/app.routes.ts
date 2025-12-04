@@ -14,6 +14,7 @@ import { NgModule } from '@angular/core';
 import { EditClientComponent } from './pages/edit-client/edit-client';
 import { EditLawyerComponent } from './pages/edit-lawyer/edit-lawyer';
 import { roleGuard } from './guards/role.guard';
+import { ProcessesComponent } from './pages/processes/processes';
 
 export const routes: Routes = [
   { path: '', component: LoginComponent, title: 'Login' },
@@ -62,9 +63,9 @@ export const routes: Routes = [
   },
   { path: 'chatbot', component: ChatbotComponent, title: 'ChatBot', canActivate: [roleGuard] },
   {
-    path: 'cases',
-    component: CasesComponent,
-    title: 'Cases',
+    path: 'processes',
+    component: ProcessesComponent,
+    title: 'Processes',
     canActivate: [roleGuard],
     data: { roles: ['Admin', 'Lawyer', 'Client'] },
   },
