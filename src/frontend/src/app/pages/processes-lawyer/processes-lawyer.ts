@@ -1,10 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { ButtonComponent } from '../../shared/button/button';
 import { PageTitleComponent } from '../../shared/page-title/page-title';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { PaginationComponent } from '../../shared/pagination/pagination';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { LawyerService } from '../../services/lawyer.service';
+import { PaginationComponent } from '../../shared/pagination/pagination';
 
 @Component({
   selector: 'app-processes',
@@ -15,44 +17,47 @@ import { Router } from '@angular/router';
 })
 export class ProcessesLawyerComponent {
   private router = inject(Router);
+  private lawyerService = inject(LawyerService);
+  private auth = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
   
-  processes = [
-    {
-      id: 1,
-      title: 'Property Dispute',
-      description:
-        'This case concerns an ongoing dispute between two neighboring property owners regarding the exact boundary line separating their parcels of land in Lisbon. One party claims that a recently installed fence encroaches onto their property.',
-      caseLocation: 'Lisbon, Portugal',
-      clientName: 'Emily Collins',
-      clientLocation: 'Porto, Portugal'
-    },
-    {
-      id: 2,
-      title: 'Commercial Lease Issue',
-      description:
-        'Disagreement between landlord and tenant over early termination of a commercial lease and responsibility for renovations.',
-      caseLocation: 'Porto, Portugal',
-      clientName: 'John Silva',
-      clientLocation: 'Lisbon, Portugal'
-    },
-    {
-      id: 3,
-      title: 'Inheritance Dispute',
-      description:
-        'Siblings contest the distribution of assets after the death of a parent, questioning the validity of the will.',
-      caseLocation: 'Coimbra, Portugal',
-      clientName: 'Ana Pereira',
-      clientLocation: 'Coimbra, Portugal'
-    }
-  ];
+  processes: any[] = [];
 
   currentPage = 1;
-  totalPages = 8;
+  totalPages = 1;
   goToPageNumber = 1;
+  totalProcesses = 0;
+
+  ngOnInit() {
+    const lawyerId = this.auth.getUserId();
+    this.loadProcesses(lawyerId!, this.currentPage);
+  }
+
+  loadProcesses(id: string, page: number) {
+    this.lawyerService.getProcessesByLawyer(id, page).subscribe({
+      next: (res) => {
+        this.processes = [...(res.data ?? [])];
+
+        const totalCount = res.meta?.totalCount ?? 0;
+        const limit = res.meta?.limit ?? 20;
+
+        this.totalPages = Math.max(1, Math.ceil(totalCount / limit));
+        this.totalProcesses = totalCount;
+
+        this.currentPage = page;
+
+        this.cdr.detectChanges();
+
+        console.log("Processes loaded:", this.processes);
+      }
+    });
+  }
 
   goToPage(page: number) {
     if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
+      const lawyerId = this.auth.getUserId();
+      this.loadProcesses(lawyerId!, this.currentPage);
     }
   }
 
@@ -61,7 +66,11 @@ export class ProcessesLawyerComponent {
     return parts.map(p => p[0].toUpperCase()).slice(0, 2).join('');
   }
 
-  openProcess(id: number) {
+  openProcess(id: string) {
     this.router.navigate(['/processes/lawyer', id]);
+  }
+
+  startProcess() {
+    this.router.navigate(['/processes/lawyer/create']);
   }
 }

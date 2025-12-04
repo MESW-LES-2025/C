@@ -15,6 +15,7 @@ import { EditClientComponent } from './pages/edit-client/edit-client';
 import { EditLawyerComponent } from './pages/edit-lawyer/edit-lawyer';
 import { roleGuard } from './guards/role.guard';
 import { ProcessesLawyerComponent } from './pages/processes-lawyer/processes-lawyer';
+import { CreateProcessComponent } from './pages/create-process/create-process';
 
 export const routes: Routes = [
   { path: '', component: LoginComponent, title: 'Login' },
@@ -76,6 +77,14 @@ export const routes: Routes = [
     canActivate: [roleGuard],
     data: { roles: ['Client'] },
   },*/
+  {
+    path: 'processes/lawyer/create',
+    component: CreateProcessComponent,
+    title: 'Create Process',
+    canActivate: [roleGuard],
+    data: { roles: ['Lawyer', 'Admin'] }
+  },
+
   { path: 'profiles', component: ProfilesComponent, title: 'Profiles', canActivate: [roleGuard] },
   { path: 'settings', component: SettingsComponent, title: 'Settings', canActivate: [roleGuard] },
   {
