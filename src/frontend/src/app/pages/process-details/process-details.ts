@@ -1,89 +1,90 @@
-import { Component, inject, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { PageTitleComponent } from '../../shared/page-title/page-title';
-import { BreadcrumbService } from '../../shared/breadcrumb/breadcrumb.service';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { PageTitleComponent } from '../../shared/page-title/page-title';
+import { AuthService } from '../../services/auth.service';
+import { ProcessService } from '../../services/process.service';
 
 @Component({
-  standalone: true,
   selector: 'app-process-details',
+  standalone: true,
   templateUrl: './process-details.html',
   styleUrls: ['./process-details.css'],
   imports: [CommonModule, PageTitleComponent]
 })
-export class ProcessDetailsComponent implements OnDestroy {
+export class ProcessDetailsComponent {
 
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private breadcrumbService = inject(BreadcrumbService);
-  title = 'Process Details';
-  private sub!: Subscription;
-
-  documents = [
-    { name: 'Contract_Draft_v3.docx', size: '643MB', uploaded: '2 days ago' },
-    { name: 'Lease_Agreement_Final.pdf', size: '3.2MB', uploaded: '1 week ago' },
-    { name: 'Evidence_Photos.docx', size: '120MB', uploaded: '3 weeks ago' },
-    { name: 'Additional_Notes.docx', size: '1.1MB', uploaded: '1 month ago' }
-  ];
+  private processService = inject(ProcessService);
+  private auth = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
 
   process: any = null;
+  documents: any[] = [];
 
-  constructor() {
-    this.sub = this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (!id) return;
+  role: 'Client' | 'Lawyer' | 'Admin' | null = null;
 
-      const url = `/processes/${id}`;
+  title = 'Process Details';
 
-      this.breadcrumbService.clearLabelOverride(url);
+  ngOnInit() {
+    this.role = this.auth.getUserRole() as any;
+    const processId = this.route.snapshot.paramMap.get('id');
 
-      this.breadcrumbService.setLabelOverride(url, 'Process Details');
+    if (!processId) return;
 
-      this.sub = this.route.paramMap.subscribe(params => {
-        const id = params.get('id');
-        if (!id) return;
+    this.loadProcess(processId);
+  }
 
-        this.loadProcess(id);
-      });
-      
+  loadProcess(id: string) {
+    this.processService.getProcessById(id).subscribe({
+      next: (res: any) => {
+        this.process = res;
+
+        // Normalize structure for sidebar
+        this.process.client = res.client || res.clientInfo || null;
+        this.process.lawyer = res.lawyer || res.lawyerInfo || null;
+
+        // Load documents if included
+        this.documents = res.documents || [];
+
+        this.cdr.detectChanges();
+      }
     });
   }
 
-  getDocumentIcon(filename: string): string {
-    const ext = filename.toLowerCase();
+  // Sidebar initials
+  getInitials(name: string | undefined): string {
+    if (!name) return '?';
+    return name
+      .split(' ')
+      .filter(x => x.length > 0)
+      .map(x => x[0].toUpperCase())
+      .join('')
+      .slice(0, 2);
+  }
 
-    if (ext.endsWith('.doc') || ext.endsWith('.docx')) {
-      return 'assets/doc-icons/docs-logo.png';
+  // For attachments
+  getDocumentIcon(fileName: string) {
+    if (!fileName) return 'assets/file.png';
+    const ext = fileName.split('.').pop()?.toLowerCase();
+
+    switch (ext) {
+      case 'pdf':
+        return 'assets/icons/pdf.png';
+      case 'doc':
+      case 'docx':
+        return 'assets/icons/doc.png';
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+        return 'assets/icons/img.png';
+      default:
+        return 'assets/icons/file.png';
     }
-
-    if (ext.endsWith('.pdf')) {
-      return 'assets/doc-icons/pdf-logo.png';
-    }
-
-    return 'assets/doc-icons/file-generic.png';
   }
 
-
-  loadProcess(id: string) {
-    // later for API service, call the backend
-
-    this.process = {
-      clientName: 'Emily Collins',
-      clientLocation: 'Porto, Portugal'
-    };
-  }
-
-  getInitials(name: string): string {
-    const parts = name.split(' ').filter(Boolean);
-    return parts.map(p => p[0].toUpperCase()).slice(0, 2).join('');
-  }
-
-  removeDocument(index: number) {
-    this.documents.splice(index, 1);
-  }
-
-  ngOnDestroy(): void {
-    this.sub?.unsubscribe();
+  removeDocument(i: number) {
+    this.documents.splice(i, 1);
+    this.cdr.detectChanges();
   }
 }

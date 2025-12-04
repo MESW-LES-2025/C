@@ -72,13 +72,15 @@ export class ProcessesLawyerComponent {
     }
   }
 
-  getInitials(name: string): string {
+  getInitials(name?: string): string {
+    if (!name || typeof name !== 'string') return '?';
+
     const parts = name.split(' ').filter(Boolean);
     return parts.map(p => p[0].toUpperCase()).slice(0, 2).join('');
   }
 
   openProcess(id: string) {
-    this.router.navigate(['/processes/lawyer', id]);
+    this.router.navigate(['/processes', id]);
   }
 
   startProcess() {

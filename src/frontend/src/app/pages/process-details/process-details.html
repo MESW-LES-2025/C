@@ -67,24 +67,42 @@
 
 
     <aside class="process-side">
-      <section class="card-client-card">
+    
+                <!-- Lawyer View: show Client -->
+        <section class="card-client-card" *ngIf="role === 'Lawyer' || role === 'Admin'">
+            <h3 class="client-title">Client</h3>
 
-  <h3 class="client-title">Client</h3>
+            <div class="client-info">
+            <div class="client-main">
+                <div class="client-left">
+                <p class="client-name">{{ process?.client?.name }}</p>
+                <p class="client-location">{{ process?.client?.location }}</p>
+                </div>
 
-  <div class="client-info">
-    <div class="client-main">
-        <div class="client-left">
-            <p class="client-name">{{ process.clientName }}</p>
-            <p class="client-location">{{ process.clientLocation }}</p>
-        </div>
+                <div class="client-avatar">
+                <span>{{ getInitials(process?.client?.name) }}</span>
+                </div>
+            </div>
+            </div>
+        </section>
 
-        <div class="client-avatar">
-            <span>{{ getInitials(process.clientName) }}</span>
-        </div>
-        </div>
-    </div>
+        <!-- Client View: show Lawyer -->
+        <section class="card-client-card" *ngIf="role === 'Client'">
+            <h3 class="client-title">Lawyer</h3>
 
-    </section>
+            <div class="client-info">
+            <div class="client-main">
+                <div class="client-left">
+                <p class="client-name">{{ process?.lawyer?.name }}</p>
+                <p class="client-location">{{ process?.lawyer?.location }}</p>
+                </div>
+
+                <div class="client-avatar">
+                <span>{{ getInitials(process?.lawyer?.name) }}</span>
+                </div>
+            </div>
+            </div>
+        </section>
 
 
       <section class="card-chat-card">
