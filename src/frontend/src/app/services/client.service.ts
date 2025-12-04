@@ -63,4 +63,11 @@ export class ClientService {
     );
   }
 
+  getProcessesByClient(clientId: string, page = 1) {
+    return this.http.get<any>(
+      `${environment.apiBaseUrl}/processes/client/${clientId}`,
+      { params: { page } }
+    );
+  }
+
 }
