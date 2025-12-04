@@ -59,12 +59,12 @@ run-dev: build-dev up-dev
 up-prod:
 	$(COMPOSE) -f $(PROD_FILE) up -d
 
-run-prod: build-prod up-prod
-	@echo "✓ Prod environment running (INFO logs, no Swagger)"
+run-prod: 
+	FRONTEND_CONFIG=docker $(COMPOSE) -f $(PROD_FILE) build --no-cache
+	FRONTEND_CONFIG=docker $(COMPOSE) -f $(PROD_FILE) up -d
+	@echo "✓ Prod environment running (Local Backend)"
 	@echo "  Frontend: http://localhost:4200"
 	@echo "  Backend:  http://localhost:8080"
-	# @echo "  Qdrant:   http://localhost:6333"
-
 
 # ------------------------
 # Logs

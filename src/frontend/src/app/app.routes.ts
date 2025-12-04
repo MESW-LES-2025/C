@@ -13,32 +13,83 @@ import { LoginComponent } from './pages/login/login';
 import { NgModule } from '@angular/core';
 import { EditClientComponent } from './pages/edit-client/edit-client';
 import { EditLawyerComponent } from './pages/edit-lawyer/edit-lawyer';
-import { ProcessesComponent } from './pages/processes/processes';
-import { ProcessDetailsComponent } from './pages/process-details/process-details';
+import { roleGuard } from './guards/role.guard';
 
 export const routes: Routes = [
-	{ path: '', component: LoginComponent, title: 'Login' },
-	{ path: 'home', component: HomeComponent, title: 'Home' },
-	{ path: 'clients/:id', component: ClientDetailsComponent, title: 'Client Details' },
-	{ path: 'lawyers/:id', component: LawyerDetailsComponent, title: 'Lawyer Details' },
-	{ path: 'lawyers/:id/edit', component: EditLawyerComponent, title: 'Edit Lawyer' },
-	{ path: 'clients/:id/edit', component: EditClientComponent, title: 'Edit Client' },
-	{ path: 'clients', component: ClientsComponent, title: 'Clients' },
-	{ path: 'lawyers', component: LawyersComponent, title: 'Lawyers' },
-	{ path: 'chatbot', component: ChatbotComponent, title: 'ChatBot' },
-	{ path: 'processes', component: ProcessesComponent, title: 'Processes' },
-	{ path: 'processes/:id', component: ProcessDetailsComponent, title: 'Process Details' },
-	{ path: 'profiles', component: ProfilesComponent, title: 'Profiles' },
-	{ path: 'settings', component: SettingsComponent, title: 'Settings' },
-	{ path: 'create-client', component: CreateClientComponent, title: 'Create Client' },
-	{ path: 'create-lawyer', component: CreateLawyerComponent, title: 'Create Lawyer' },
-	{ path: 'login', component: LoginComponent },
-	{ path: '**', redirectTo: '' }
+  { path: '', component: LoginComponent, title: 'Login' },
+  { path: 'home', component: HomeComponent, title: 'Home', canActivate: [roleGuard] },
+  {
+    path: 'clients/:id',
+    component: ClientDetailsComponent,
+    title: 'Client Details',
+    canActivate: [roleGuard],
+    data: { roles: ['Admin', 'Lawyer'] },
+  },
+  {
+    path: 'lawyers/:id',
+    component: LawyerDetailsComponent,
+    title: 'Lawyer Details',
+    canActivate: [roleGuard],
+    data: { roles: ['Admin', 'Lawyer'] },
+  },
+  {
+    path: 'lawyers/:id/edit',
+    component: EditLawyerComponent,
+    title: 'Edit Lawyer',
+    canActivate: [roleGuard],
+    data: { roles: ['Admin', 'Lawyer'] },
+  },
+  {
+    path: 'clients/:id/edit',
+    component: EditClientComponent,
+    title: 'Edit Client',
+    canActivate: [roleGuard],
+    data: { roles: ['Admin', 'Lawyer'] },
+  },
+  {
+    path: 'clients',
+    component: ClientsComponent,
+    title: 'Clients',
+    canActivate: [roleGuard],
+    data: { roles: ['Admin', 'Lawyer'] },
+  },
+  {
+    path: 'lawyers',
+    component: LawyersComponent,
+    title: 'Lawyers',
+    canActivate: [roleGuard],
+    data: { roles: ['Admin', 'Lawyer'] },
+  },
+  { path: 'chatbot', component: ChatbotComponent, title: 'ChatBot', canActivate: [roleGuard] },
+  {
+    path: 'cases',
+    component: CasesComponent,
+    title: 'Cases',
+    canActivate: [roleGuard],
+    data: { roles: ['Admin', 'Lawyer', 'Client'] },
+  },
+  { path: 'profiles', component: ProfilesComponent, title: 'Profiles', canActivate: [roleGuard] },
+  { path: 'settings', component: SettingsComponent, title: 'Settings', canActivate: [roleGuard] },
+  {
+    path: 'create-client',
+    component: CreateClientComponent,
+    title: 'Create Client',
+    canActivate: [roleGuard],
+    data: { roles: ['Admin', 'Lawyer'] },
+  },
+  {
+    path: 'create-lawyer',
+    component: CreateLawyerComponent,
+    title: 'Create Lawyer',
+    canActivate: [roleGuard],
+    data: { roles: ['Admin', 'Lawyer'] },
+  },
+  { path: 'login', component: LoginComponent },
+  { path: '**', redirectTo: '' },
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-
-export class AppRoutingModule { }
+export class AppRoutingModule {}

@@ -7,8 +7,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Consilium.Domain.Models;
 using Consilium.Infrastructure.Data;
 using Consilium.API.Dtos;
+using Microsoft.Extensions.Configuration;
 
 namespace Consilium.Tests.Endpoints;
+
+using Consilium.Tests.TestHelpers;
 
 public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
@@ -16,6 +19,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 
     public AdminEndpointsTests(WebApplicationFactory<Program> factory)
     {
+        var dbName = "TestDb" + Guid.NewGuid();
         _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Test");
@@ -26,7 +30,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 
                 services.AddDbContext<AppDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase("TestDb");
+                    options.UseInMemoryDatabase(dbName);
                     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
                 });
             });
@@ -35,6 +39,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 
     private async Task<Guid> SeedAdmin(AppDbContext db)
     {
+        await AuthTestHelper.SeedAuthUser(db);
         var user = new User { ID = Guid.NewGuid(), Name = "Admin One", Email = "admin1@test", NIF = "555555555", PasswordHash = "x", IsActive = true };
         var admin = new Admin { ID = user.ID, StartedAt = DateTime.UtcNow };
         var phone = new Phone { ID = Guid.NewGuid(), UserID = user.ID, Number = "9999", CountryCode = 351, IsMain = true };
@@ -51,6 +56,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task CreateAdmin_ReturnsCreated()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
 
         var req = new CreateAdminRequest(Email: $"newadmin{Guid.NewGuid():N}@test", Password: "pass", Name: "New Admin", NIF: "666666666", PhoneNumber: null, PhoneCountryCode: null, PhoneIsMain: null);
 
@@ -69,6 +75,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task GetAdminById_ReturnsAdmin()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid id;
         using (var scope = _factory.Services.CreateScope())
         {
@@ -88,6 +95,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task PatchAdmin_UpdatesProvidedFields()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid id;
         using (var scope = _factory.Services.CreateScope())
         {
@@ -108,6 +116,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task GetAllAdmins_WithSearchStatusSortPagination_ReturnsFilteredAndMeta()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -134,6 +143,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task CreateAdmin_MissingEmail_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         var req = new CreateAdminRequest(Email: "", Password: "pass", Name: "Name", NIF: "111222333", PhoneNumber: null, PhoneCountryCode: null, PhoneIsMain: null);
         var resp = await client.PostAsJsonAsync("/api/admins/", req);
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
@@ -143,6 +153,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task CreateAdmin_MissingPassword_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         var req = new CreateAdminRequest(Email: "a@test.com", Password: "", Name: "Name", NIF: "111222333", PhoneNumber: null, PhoneCountryCode: null, PhoneIsMain: null);
         var resp = await client.PostAsJsonAsync("/api/admins/", req);
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
@@ -152,6 +163,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task CreateAdmin_InvalidNif_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         var req = new CreateAdminRequest(Email: "a@test.com", Password: "pass", Name: "Name", NIF: "INVALID", PhoneNumber: null, PhoneCountryCode: null, PhoneIsMain: null);
         var resp = await client.PostAsJsonAsync("/api/admins/", req);
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
@@ -161,6 +173,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task UpdateAdmin_NoFieldsProvided_ReturnsBadRequest()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         Guid id;
         using (var scope = _factory.Services.CreateScope())
         {
@@ -177,6 +190,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task DeleteAdmin_DeletesAndReturnsNoContent()
     {
         var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
