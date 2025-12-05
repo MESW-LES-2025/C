@@ -37,5 +37,8 @@ export class ProcessService {
     );
   }
 
+  updateProcessFiles(processId: string, formData: FormData) {
+    return this.http.patch(`${environment.apiBaseUrl}/processes/${processId}/with-documents`, formData);
+  }
 
 }

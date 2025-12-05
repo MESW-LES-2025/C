@@ -15,7 +15,14 @@
   <div class="cases-toolbar">
     <div class="search-box">
       <i class="fa fa-search search-icon"></i>
-      <input class="search" type="search" placeholder="Search processes…" />
+      <input
+        class="search"
+        type="search"
+        placeholder="Search processes…"
+        [(ngModel)]="searchTerm"
+        (input)="onSearch()"
+        />
+
     </div>
 
     <app-button

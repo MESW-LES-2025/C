@@ -46,10 +46,10 @@ export class LawyerService {
     );
   }
 
-  getProcessesByLawyer(lawyerId: string, page = 1) {
+  getProcessesByLawyer(lawyerId: string, page = 1, search: string = '') {
     return this.http.get<any>(
       `${environment.apiBaseUrl}/processes/lawyer/${lawyerId}`,
-      { params: { page } }
+      { params: { page, search } }
     );
   }
 

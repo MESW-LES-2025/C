@@ -32,6 +32,9 @@ export class ProcessesComponent {
   role: string | null = null;
   loading = false;
 
+  searchTerm: string = '';
+  searchTimeout: any = null;
+
   ngOnInit() {
     this.role = this.auth.getUserRole();
     const userId = this.auth.getUserId();
@@ -43,18 +46,17 @@ export class ProcessesComponent {
     return this.role === 'Lawyer';
   }
 
-    isClient() {
+  isClient() {
     return this.role === 'Client';
   }
 
-
-  loadProcesses(id: string, page: number) {
+  loadProcesses(id: string, page: number, search: string = '') {
     if (!id) return;
 
     this.loading = true;
 
     if (this.role === 'Lawyer') {
-      this.lawyerService.getProcessesByLawyer(id, page).subscribe({
+      this.lawyerService.getProcessesByLawyer(id, page, search).subscribe({
         next: (res) => {
           this.processes = [...(res.data ?? [])];
 
@@ -86,7 +88,7 @@ export class ProcessesComponent {
     }
 
     if (this.role === 'Client') {
-      this.clientService.getProcessesByClient(id, page).subscribe({
+      this.clientService.getProcessesByClient(id, page, search).subscribe({
         next: (res) => {
           this.processes = res.data ?? [];
 
@@ -116,7 +118,7 @@ export class ProcessesComponent {
       return;
     }
 
-    this.lawyerService.getProcessesByLawyer(id, page).subscribe({
+    this.lawyerService.getProcessesByLawyer(id, page, search).subscribe({
       next: (res) => {
         this.processes = [...(res.data ?? [])];
         const totalCount = res.meta?.totalCount ?? 0;
@@ -129,6 +131,18 @@ export class ProcessesComponent {
       error: () => {}
     });
   }
+
+  onSearch() {
+    clearTimeout(this.searchTimeout);
+
+    this.searchTimeout = setTimeout(() => {
+        const userId = this.auth.getUserId();
+        if (userId) {
+        this.loadProcesses(userId, 1, this.searchTerm);
+        }
+    }, 300);
+  }
+
 
   goToPage(page: number) {
     if (page >= 1 && page <= this.totalPages) {
