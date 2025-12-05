@@ -28,6 +28,11 @@ export class ProcessDetailsComponent {
   documents: any[] = [];
   role: string | null = null;
 
+  processStatusName: string = '';
+  processTypeName: string = '';
+  processPhaseName: string = '';
+
+
   title = 'Process Details';
   private breadcrumbService = inject(BreadcrumbService);
 
@@ -37,6 +42,7 @@ export class ProcessDetailsComponent {
     if (processId) {
       this.loadProcess(processId);
     }
+    this.loadProcessStatus();
   }
 
   loadProcess(id: string) {
@@ -51,7 +57,13 @@ export class ProcessDetailsComponent {
           nextHearingDate: res.nextHearingDate,
           clientId: res.clientId,
           lawyerId: res.lawyerId,
+          priority: res.priority,
+          processTypePhaseId: res.processTypePhaseId,
+          processStatusId: res.processStatusId,
         };
+
+        this.loadProcessStatus();
+        this.loadProcessTypePhase();
 
         this.documents = (res.documents || []).map((d: { fileName: any; fileSize: number; createdAt: string | number | Date; fileMimeType: any; downloadUrl: any; }) => ({
           name: d.fileName,
@@ -97,6 +109,34 @@ export class ProcessDetailsComponent {
     }
   }
 
+  loadProcessStatus() {
+    if (!this.process?.processStatusId) return;
+
+    this.processService.getProcessStatuses().subscribe(statuses => {
+      const match = statuses.find(s => s.id === this.process.processStatusId);
+      this.processStatusName = match?.name ?? '—';
+      this.cdr.detectChanges();
+    });
+  }
+
+  loadProcessTypePhase() {
+    if (!this.process?.processTypePhaseId) return;
+
+    this.processService.getProcessTypePhases().subscribe(types => {
+      const match = types.find(t => t.id === this.process.processTypePhaseId);
+
+      if (match) {
+        this.processTypeName = match.processTypeName;
+        this.processPhaseName = match.processPhaseName;
+      } else {
+        this.processTypeName = '—';
+        this.processPhaseName = '—';
+      }
+
+      this.cdr.detectChanges();
+    });
+  }
+
   getInitials(name?: string | null): string {
     if (!name || typeof name !== 'string') return '?';
     
@@ -136,10 +176,8 @@ export class ProcessDetailsComponent {
   removeDocument(i: number) {
     const doc = this.documents[i];
 
-    // Remove from UI
     this.documents.splice(i, 1);
 
-    // Prepare backend request
     const formData = new FormData();
     formData.append("deleteDocuments", doc.raw.documentId);
 

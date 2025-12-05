@@ -41,4 +41,12 @@ export class ProcessService {
     return this.http.patch(`${environment.apiBaseUrl}/processes/${processId}/with-documents`, formData);
   }
 
+  getProcessStatuses() {
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/lookups/process-statuses`);
+  }
+
+  getProcessTypePhases() {
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/lookups/process-type-phases`);
+  }
+
 }
