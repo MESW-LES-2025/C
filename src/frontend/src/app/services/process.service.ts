@@ -7,11 +7,10 @@ import { delay, catchError } from 'rxjs/operators';
 @Injectable({ providedIn: 'root' })
 export class ProcessService {
 
-  private useMock = false; // set to true if you want mock data
+  private useMock = false;
 
   constructor(private http: HttpClient) {}
 
-  /** Get a single process by ID */
   getProcessById(id: string): Observable<any> {
     if (this.useMock) {
       return of({
@@ -27,6 +26,16 @@ export class ProcessService {
     return this.http.get<any>(`${environment.apiBaseUrl}/processes/${id}`);
   }
 
+  getProcessWithDocuments(id: string) {
+    return this.http.get<any>(`${environment.apiBaseUrl}/processes/${id}/with-documents`);
+  }
+
+  uploadFiles(processId: string, formData: FormData) {
+    return this.http.patch(
+        `${environment.apiBaseUrl}/processes/${processId}/with-documents`,
+        formData
+    );
+  }
 
 
 }

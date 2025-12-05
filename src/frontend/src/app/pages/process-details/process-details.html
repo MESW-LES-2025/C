@@ -9,12 +9,10 @@
     <main class="process-main">
         <section class="process-info">
 
-            <h3 class="process-title">Property Dispute</h3>
+            <h3 class="process-title">{{ process?.name }}</h3>
 
             <p class="process-description">
-                This case concerns an ongoing dispute between two neighboring property owners regarding the exact 
-                boundary line separating their parcels of land in Lisbon. One party claims that a recently installed
-                fence encroaches onto their property by several meters, while the other argues that the fence is ugly.
+                {{ process?.description }}
             </p>
 
             <h4 class="process-subtitle">Attached Documents</h4>
@@ -50,13 +48,23 @@
 
                 <div class="attachments-upload">
                     <div class="upload-box">
-                    <img class="upload-icon" src="assets/upload_logo.png" alt="Upload">
-                    <div class="upload-text">
-                        Drag &amp; drop file(s) to upload<br />
-                        <button type="button" class="upload-browse">or browse</button>
-                    </div>
+                        <img class="upload-icon" src="assets/upload_logo.png" alt="Upload">
+
+                        <div class="upload-text">
+                            Drag &amp; drop file(s) to upload<br />
+                            <button type="button" class="upload-browse" (click)="fileInput.click()">or browse</button>
+                        </div>
+
+                        <input 
+                        type="file" 
+                        #fileInput 
+                        (change)="onFileSelected($event)" 
+                        multiple 
+                        style="display: none"
+                        />
                     </div>
                 </div>
+
             </div>
 
             <h4 class="process-subtitle">Progress</h4>
@@ -68,7 +76,7 @@
 
     <aside class="process-side">
     
-                <!-- Lawyer View: show Client -->
+        <!-- Lawyer View: show Client -->
         <section class="card-client-card" *ngIf="role === 'Lawyer' || role === 'Admin'">
             <h3 class="client-title">Client</h3>
 
