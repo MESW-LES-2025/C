@@ -58,7 +58,6 @@ export class ProcessesComponent {
         next: (res) => {
           this.processes = [...(res.data ?? [])];
 
-          // enrich client name when available
           this.processes.forEach((p) => {
             if (p.clientId) {
               this.clientService.getClient(p.clientId).subscribe(clientRes => {
@@ -114,11 +113,9 @@ export class ProcessesComponent {
           this.loading = false;
         }
       });
-
       return;
     }
 
-    // fallback: attempt to load as lawyer
     this.lawyerService.getProcessesByLawyer(id, page).subscribe({
       next: (res) => {
         this.processes = [...(res.data ?? [])];

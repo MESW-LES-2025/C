@@ -6,6 +6,7 @@ import { ProcessService } from '../../services/process.service';
 import { ClientService } from '../../services/client.service';
 import { LawyerService } from '../../services/lawyer.service';
 import { AuthService } from '../../services/auth.service';
+import { BreadcrumbService } from '../../shared/breadcrumb/breadcrumb.service';
 
 @Component({
   selector: 'app-process-details',
@@ -28,6 +29,7 @@ export class ProcessDetailsComponent {
   role: string | null = null;
 
   title = 'Process Details';
+  private breadcrumbService = inject(BreadcrumbService);
 
   ngOnInit() {
     this.role = this.auth.getUserRole();
@@ -59,6 +61,11 @@ export class ProcessDetailsComponent {
           downloadUrl: d.downloadUrl,
           raw: d
         }));
+
+        try {
+          const url = `/processes/${id}`;
+          if (res?.name) this.breadcrumbService.setLabelOverride(url, res.name);
+        } catch (e) {}
 
         this.fetchClientAndLawyer();    
         this.cdr.detectChanges();
@@ -146,6 +153,13 @@ export class ProcessDetailsComponent {
     }
 
     this.uploadFiles(files);
+  }
+
+  ngOnDestroy(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.breadcrumbService.clearLabelOverride(`/processes/${id}`);
+    }
   }
 
 }
