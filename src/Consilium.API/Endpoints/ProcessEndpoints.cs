@@ -14,58 +14,69 @@ public static class ProcessEndpoints
         var group = app.MapGroup("/api/processes")
             .WithName("Processes")
             .WithOpenApi();
-        group.RequireAuthorization("AdminOrLawyer");
 
         group.MapGet("/", GetAllProcesses)
             .WithName("GetAllProcesses")
-            .WithDescription("Retrieve all processes");
+            .WithDescription("Retrieve all processes")
+            .RequireAuthorization("AdminOrLawyer");
 
         group.MapGet("/{id:guid}", GetProcessById)
             .WithName("GetProcessById")
-            .WithDescription("Retrieve a process by ID");
+            .WithDescription("Retrieve a process by ID")
+            .RequireAuthorization("AdminOrLawyer");
 
         group.MapGet("/{id:guid}/with-documents", GetProcessByIdWithDocuments)
             .WithName("GetProcessByIdWithDocuments")
-            .WithDescription("Retrieve a process by ID with its associated documents");
+            .WithDescription("Retrieve a process by ID with its associated documents")
+            .RequireAuthorization("AdminOrLawyer");
 
         // Client-specific endpoints
         group.MapGet("/client/{clientId:guid}", GetProcessesByClient)
             .WithName("GetProcessesByClient")
-            .WithDescription("Retrieve all processes for a specific client");
+            .WithDescription("Retrieve all processes for a specific client")
+            .RequireAuthorization("Any");
 
         group.MapGet("/client/{clientId:guid}/with-documents", GetProcessesByClientWithDocuments)
             .WithName("GetProcessesByClientWithDocuments")
-            .WithDescription("Retrieve all processes and documents for a specific client");
+            .WithDescription("Retrieve all processes and documents for a specific client")
+            .RequireAuthorization("Any");
 
         group.MapPost("/", CreateProcess)
             .WithName("CreateProcess")
-            .WithDescription("Create a new legal process");
+            .WithDescription("Create a new legal process")
+            .RequireAuthorization("AdminOrLawyer");
         // Create a process with associated documents via multipart/form-data
         group.MapPost("/with-documents", CreateProcessWithDocuments)
             .WithName("CreateProcessWithDocuments")
             .WithDescription("Create a new legal process and upload documents (multipart/form-data)")
-            .DisableAntiforgery(); // Disable CSRF for testing file uploads
+            .DisableAntiforgery() // Disable CSRF for testing file uploads
+            .RequireAuthorization("AdminOrLawyer");
 
         group.MapPatch("/{id:guid}", UpdateProcess)
             .WithName("UpdateProcess")
-            .WithDescription("Update process");
+            .WithDescription("Update process")
+            .RequireAuthorization("AdminOrLawyer");
         group.MapPatch("/{id:guid}/with-documents", UpdateProcessWithDocuments)
             .WithName("UpdateProcessWithDocuments")
             .WithDescription("Update process and upload/delete documents (multipart/form-data)")
-            .DisableAntiforgery(); // Disable CSRF for testing file uploads
+            .DisableAntiforgery() // Disable CSRF for testing file uploads
+            .RequireAuthorization("AdminOrLawyer");
 
         group.MapDelete("/{id:guid}", DeleteProcess)
             .WithName("DeleteProcess")
-            .WithDescription("Delete a process");
+            .WithDescription("Delete a process")
+            .RequireAuthorization("AdminOrLawyer");
 
         // Lawyer-specific endpoints
         group.MapGet("/lawyer/{lawyerId:guid}", GetProcessesByLawyer)
             .WithName("GetProcessesByLawyer")
-            .WithDescription("Retrieve all processes for a specific lawyer");
+            .WithDescription("Retrieve all processes for a specific lawyer")
+            .RequireAuthorization("AdminOrLawyer");
 
         group.MapGet("/lawyer/{lawyerId:guid}/with-documents", GetProcessesByLawyerWithDocuments)
             .WithName("GetProcessesByLawyerWithDocuments")
-            .WithDescription("Retrieve all processes and documents for a specific lawyer");
+            .WithDescription("Retrieve all processes and documents for a specific lawyer")
+            .RequireAuthorization("AdminOrLawyer");
     }
 
     private static async Task<IResult> GetAllProcesses(
