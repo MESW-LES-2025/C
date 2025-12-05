@@ -7,6 +7,7 @@ import { LawyerService } from '../../services/lawyer.service';
 import { PageTitleComponent } from '../../shared/page-title/page-title';
 import { ButtonComponent } from '../../shared/button/button';
 import { ConfirmModalComponent } from '../../shared/confirm-modal/confirm-modal';
+import { ClientService } from '../../services/client.service';
 
 @Component({
   selector: 'app-create-process',
@@ -25,9 +26,12 @@ export class CreateProcessComponent {
   private auth = inject(AuthService);
   private lawyerService = inject(LawyerService);
   private router = inject(Router);
+  private clientService = inject(ClientService);
 
   showCancelModal = false;
   submitting = false;
+
+  clients: any[] = [];
 
   model: any = {
     name: '',
@@ -42,8 +46,7 @@ export class CreateProcessComponent {
   };
 
   ngOnInit() {
-    // TEMP
-    this.model.clientId = '7830bf4b-f7eb-4c6a-8765-0a6baf3c1070';
+    this.loadClients();
   }
 
   get initials() {
@@ -97,6 +100,16 @@ export class CreateProcessComponent {
         console.error('Failed to create process', err);
         this.submitting = false;
       }
+    });
+  }
+
+  loadClients() {
+    this.clientService.getAllClients().subscribe({
+      next: (res) => {
+        console.log("CLIENT RESPONSE:", res);
+        this.clients = res.data ?? [];
+      },
+      error: (err: any) => console.error("Failed to load clients", err)
     });
   }
 

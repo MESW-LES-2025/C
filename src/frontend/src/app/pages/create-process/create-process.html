@@ -22,6 +22,20 @@
   <form (ngSubmit)="createProcess()" #f="ngForm" novalidate>
     <div class="process-details layout-grid">
       <main class="main-col">
+
+        <div class="row">
+          <div class="field">
+            <label>Assign to Client</label>
+
+            <select name="clientId" [(ngModel)]="model.clientId" required>
+              <option value="">-- Select client --</option>
+
+              <option *ngFor="let c of clients" [value]="c.id">
+                {{ c.email }}
+              </option>
+            </select>
+          </div>
+        </div>
         
         <!-- PROCESS INFORMATION -->
         <section class="card process prominent">

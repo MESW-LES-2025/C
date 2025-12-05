@@ -29,6 +29,10 @@ export class ClientService {
     return this.http.get<any>(`${environment.apiBaseUrl}/clients/${id}`);
   }
 
+  getAllClients():Observable<any>{
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/clients`);
+  }
+
   deleteClient(id: string): Observable<any> {
     if (this.useMock) {
       return of({}).pipe(delay(200));
