@@ -1,0 +1,150 @@
+<section class="page">
+  <div class="page-header">
+    <app-page-title title="Create Process"></app-page-title>
+
+    <div class="page-actions">
+      <app-button
+        label="Cancel"
+        variant="secondary"
+        (click)="onCancelClick()"
+      ></app-button>
+
+      <app-button
+        label="Create Process"
+        icon="fa-plus"
+        variant="primary"
+        [disabled]="!isComplete() || submitting"
+        (click)="createProcess()"
+      ></app-button>
+    </div>
+  </div>
+
+  <form (ngSubmit)="createProcess()" #f="ngForm" novalidate>
+    <div class="process-details layout-grid">
+      <main class="main-col">
+
+        <div class="row">
+          <div class="field">
+            <label>Assign to Client</label>
+
+            <select name="clientId" [(ngModel)]="model.clientId" required>
+              <option value="">-- Select client --</option>
+
+              <option *ngFor="let c of clients" [value]="c.id">
+                {{ c.email }}
+              </option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- PROCESS INFORMATION -->
+        <section class="card process prominent">
+          <h3>Process Information</h3>
+
+          <div class="row">
+            <div class="field">
+              <label>Process Name</label>
+              <input
+                name="name"
+                required
+                [(ngModel)]="model.name"
+                placeholder="e.g. Property Boundary Dispute"
+              />
+            </div>
+
+            <div class="field">
+              <label>Process Number</label>
+              <input
+                name="number"
+                required
+                [(ngModel)]="model.number"
+                placeholder="e.g. PROC-2025-001"
+              />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Adverse Party Name</label>
+              <input
+                name="adversePartName"
+                [(ngModel)]="model.adversePartName"
+                placeholder="e.g. João Pereira"
+              />
+            </div>
+
+            <div class="field">
+              <label>Opposing Counsel</label>
+              <input
+                name="opposingCounselName"
+                [(ngModel)]="model.opposingCounselName"
+                placeholder="e.g. Dr. Martins"
+              />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field full">
+              <label>Description</label>
+              <textarea
+                name="description"
+                rows="4"
+                [(ngModel)]="model.description"
+                placeholder="Describe the core conflict, context, and relevant details"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- COURT DETAILS -->
+        <section class="card court prominent">
+          <h3>Court Details</h3>
+
+          <div class="row">
+            <div class="field">
+              <label>Court Information</label>
+              <input
+                name="courtInfo"
+                [(ngModel)]="model.courtInfo"
+                placeholder="e.g. Tribunal de Lisboa"
+              />
+            </div>
+
+            <div class="field">
+              <label>Priority</label>
+              <input
+                type="number"
+                name="priority"
+                [(ngModel)]="model.priority"
+                placeholder="1"
+              />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Next Hearing Date</label>
+              <input
+                type="datetime-local"
+                name="nextHearingDate"
+                [(ngModel)]="model.nextHearingDate"
+              />
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </form>
+</section>
+
+<app-confirm-modal
+  *ngIf="showCancelModal"
+  title="Cancel Creation"
+  message="Are you sure you want to cancel? Any unsaved changes will be lost."
+  confirmLabel="Yes, Cancel"
+  cancelLabel="No, Keep Editing"
+  [danger]="true"
+  (confirm)="onConfirmCancel()"
+  (cancel)="onCloseModal()"
+></app-confirm-modal>

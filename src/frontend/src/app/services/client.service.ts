@@ -29,6 +29,10 @@ export class ClientService {
     return this.http.get<any>(`${environment.apiBaseUrl}/clients/${id}`);
   }
 
+  getAllClients():Observable<any>{
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/clients`);
+  }
+
   deleteClient(id: string): Observable<any> {
     if (this.useMock) {
       return of({}).pipe(delay(200));
@@ -60,6 +64,13 @@ export class ClientService {
     }
     return this.http.patch<any>(`${environment.apiBaseUrl}/clients/${id}`, payload).pipe(
       catchError(err => { throw err; })
+    );
+  }
+
+  getProcessesByClient(clientId: string, page = 1, search: string = '') {
+    return this.http.get<any>(
+      `${environment.apiBaseUrl}/processes/client/${clientId}`,
+      { params: { page, search } }
     );
   }
 

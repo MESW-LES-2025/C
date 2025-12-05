@@ -1,0 +1,83 @@
+<section class="page">
+  <app-page-title title="Processes"></app-page-title>
+
+  <div class="cases-overview-card">
+    <div class="overview-title">Overview</div>
+
+    <div class="overview-body">
+      <div class="overview-item">
+        <div class="overview-number">{{ totalProcesses }}</div>
+        <div class="overview-label">Number of Processes</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cases-toolbar">
+    <div class="search-box">
+      <i class="fa fa-search search-icon"></i>
+      <input
+        class="search"
+        type="search"
+        placeholder="Search processes…"
+        [(ngModel)]="searchTerm"
+        (input)="onSearch()"
+        />
+
+    </div>
+
+    <app-button
+      *ngIf="isLawyer()"
+      label="Start Process"
+      icon="fa-plus"
+      variant="primary"
+      (click)="startProcess()"
+    ></app-button>
+  </div>
+
+  <section
+    class="case-details"
+    *ngFor="let c of processes"
+    (click)="openProcess(c.processId)"
+  >
+    <div class="case-header">
+
+      <div class="case-info">
+        <p class="case-location">{{ c.courtInfo }}</p>
+        <h2 class="case-title">{{ c.name }}</h2>
+        <p class="case-description">{{ c.description }}</p>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="client-info">
+        <div class="client-main">
+
+        <!-- CLIENT VIEW: SHOW THE LAWYER -->
+        <div *ngIf="isClient()" class="client-main">
+          <div class="client-left">
+            <p class="client-name">{{ c.lawyerName || c.lawyer?.name }}</p>
+          </div>
+
+          <div class="client-avatar">
+            <span>{{ getInitials(c.lawyerName || c.lawyer?.name) }}</span>
+          </div>
+        </div>
+
+        <!-- LAWYER VIEW: SHOW THE CLIENT -->
+        <div *ngIf="isLawyer()" class="client-main">
+          <div class="client-left">
+            <p class="client-name">{{ c.clientName }}</p>
+          </div>
+
+          <div class="client-avatar">
+            <span>{{ getInitials(c.clientName) }}</span>
+          </div>
+        </div>
+
+        </div>
+        <button class="contact-btn">Contact</button>
+
+      </div>
+    </div>
+  </section>
+</section>

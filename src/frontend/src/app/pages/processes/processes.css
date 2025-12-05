@@ -1,0 +1,172 @@
+.cases-overview-card {
+  background: #fff;
+  padding: 20px 26px;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.overview-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.overview-body {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.overview-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.overview-number {
+  font-weight: 800;
+  color: #111827;
+  font-size: 20px;
+}
+
+.overview-label {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.search-box {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.2rem;
+}
+
+.search {
+  min-width: 220px;
+  max-width: 420px;
+  padding: 10px 14px;
+  padding-left: 45px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid #eef2f7;
+  background: #fff;
+  font-size: 15px;
+  color: #111827;
+}
+
+.search::placeholder {
+  color: #d1d5db;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.cases-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 56px;
+  margin: 12px 0;
+}
+
+.case-details {
+  display: flex;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+  margin-top: 16px;
+}
+
+.case-header {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.case-info {
+  flex: 1;
+}
+
+.case-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.case-location {
+  font-size: 14px;
+  color: #a4161a;
+  font-style: italic;
+}
+
+.case-description {
+  font-size: 14px;
+  color: #666;
+  margin: 8px 0 16px;
+}
+
+.divider {
+  width: 1px;
+  background: #ddd;
+}
+
+.client-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 20%;
+}
+
+.client-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.client-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.client-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.client-avatar {
+  width: 80px;
+  height: 80px;
+  background: #e9eef6;
+  border-radius: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
+}
+
+.contact-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #FFF;
+  color: #A30E25;
+  border: 2px solid #A30E25;
+  cursor: pointer;
+  align-self: flex-start;
+  width: 100%;
+  font-weight: 700;
+}

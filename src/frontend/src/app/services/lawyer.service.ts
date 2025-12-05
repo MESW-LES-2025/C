@@ -45,4 +45,16 @@ export class LawyerService {
       catchError(err => { throw err; })
     );
   }
+
+  getProcessesByLawyer(lawyerId: string, page = 1, search: string = '') {
+    return this.http.get<any>(
+      `${environment.apiBaseUrl}/processes/lawyer/${lawyerId}`,
+      { params: { page, search } }
+    );
+  }
+
+  createProcess(data: any) {
+    return this.http.post(`${environment.apiBaseUrl}/processes`, data);
+  }
+
 }

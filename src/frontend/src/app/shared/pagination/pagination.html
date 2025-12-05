@@ -1,0 +1,35 @@
+<div class="pagination-container">
+  <div class="pagination-buttons">
+
+    <button
+      class="pagination-button-previous"
+      [class.disabled]="currentPage === 1"
+      (click)="previousPage()">
+      ‹ Previous
+    </button>
+
+    <ng-container *ngFor="let page of pages">
+
+        <span *ngIf="page === 'dots'" class="dots">…</span>
+
+        <button
+        *ngIf="page !== 'dots'"
+        class="pagination-button"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page)"
+        >
+        {{ page }}
+        </button>
+
+    </ng-container>
+
+    <button
+      class="pagination-button-next"
+      [class.disabled]="currentPage === totalPages"
+      (click)="nextPage()">
+      Next ›
+    </button>
+
+  </div>
+</div>
+
