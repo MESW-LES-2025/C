@@ -14,10 +14,9 @@ import { NgModule } from '@angular/core';
 import { EditClientComponent } from './pages/edit-client/edit-client';
 import { EditLawyerComponent } from './pages/edit-lawyer/edit-lawyer';
 import { roleGuard } from './guards/role.guard';
-import { ProcessesLawyerComponent } from './pages/processes-lawyer/processes-lawyer';
 import { CreateProcessComponent } from './pages/create-process/create-process';
-import { ProcessesClientComponent } from './pages/processes-client/processes-client';
 import { ProcessDetailsComponent } from './pages/process-details/process-details';
+import { ProcessesComponent } from './pages/processes/processes';
 
 export const routes: Routes = [
   { path: '', component: LoginComponent, title: 'Login' },
@@ -66,21 +65,14 @@ export const routes: Routes = [
   },
   { path: 'chatbot', component: ChatbotComponent, title: 'ChatBot', canActivate: [roleGuard] },
   {
-    path: 'processes/lawyer',
-    component: ProcessesLawyerComponent,
-    title: 'Processes (Lawyer)',
+    path: 'processes',
+    component: ProcessesComponent,
+    title: 'Processes',
     canActivate: [roleGuard],
-    data: { roles: ['Lawyer', 'Admin'] },
+    data: { roles: ['Client', 'Lawyer', 'Admin'] },
   },
   {
-    path: 'processes/client',
-    component: ProcessesClientComponent,
-    title: 'Processes (Client)',
-    canActivate: [roleGuard],
-    data: { roles: ['Client'] },
-  },
-  {
-    path: 'processes/lawyer/create',
+    path: 'processes/create',
     component: CreateProcessComponent,
     title: 'Create Process',
     canActivate: [roleGuard],
