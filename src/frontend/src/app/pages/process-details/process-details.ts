@@ -81,7 +81,6 @@ export class ProcessDetailsComponent {
 
         this.fetchClientAndLawyer();    
         this.cdr.detectChanges();
-        console.log(this.documents);
       }
     })
   }
@@ -170,34 +169,33 @@ export class ProcessDetailsComponent {
     if (!this.process?.id) return;
 
     const formData = new FormData();
-
-    files.forEach(file => {
-      formData.append('files', file);
-    });
+    files.forEach(file => formData.append('files', file));
 
     this.processService.uploadFiles(this.process.id, formData).subscribe({
-      next: (res) => {
-        console.log("Uploaded successfully:", res);
+      next: () => {
+        this.loadProcess(this.process.id);
       },
-      error: (err) => {
-        console.error("Upload failed", err);
-      }
+      error: () => {}
     });
   }
 
   removeDocument(i: number) {
     const doc = this.documents[i];
 
-    this.documents.splice(i, 1);
+    // Prevent crash if the document has no backend ID yet
+    if (!doc.raw || !doc.raw.documentId) {
+      return;
+    }
 
-    const formData = new FormData();
-    formData.append("deleteDocuments", doc.raw.documentId);
+    const documentId = doc.raw.documentId;
 
-    this.processService.updateProcessFiles(this.process.id, formData)
-      .subscribe({
-        next: () => console.log("Document deleted on backend"),
-        error: err => console.error("Failed to delete document", err)
-      });
+    this.processService.deleteDocument(documentId).subscribe({
+      next: () => {
+        this.documents.splice(i, 1);
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
   }
 
 

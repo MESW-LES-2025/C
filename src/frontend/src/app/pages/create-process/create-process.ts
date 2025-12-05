@@ -106,7 +106,6 @@ export class CreateProcessComponent {
   loadClients() {
     this.clientService.getAllClients().subscribe({
       next: (res) => {
-        console.log("CLIENT RESPONSE:", res);
         this.clients = res.data ?? [];
       },
       error: (err: any) => console.error("Failed to load clients", err)
