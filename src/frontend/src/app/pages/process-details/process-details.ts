@@ -119,6 +119,18 @@ export class ProcessDetailsComponent {
     });
   }
 
+  getStatusClass(status: string): string {
+    if (!status) return '';
+
+    const s = status.toLowerCase();
+
+    if (s.includes('open')) return 'status-open';
+    if (s.includes('suspend')) return 'status-suspended';
+    if (s.includes('closed')) return 'status-closed';
+
+    return 'status-default';
+  }
+
   loadProcessTypePhase() {
     if (!this.process?.processTypePhaseId) return;
 

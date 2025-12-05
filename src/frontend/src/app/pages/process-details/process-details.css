@@ -13,7 +13,6 @@
   padding-right: 10px;
 }
 
-
 .process-side {
     display: flex;
     flex-direction: column;
@@ -297,3 +296,62 @@
   padding: 16px;
 }
 
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  width: fit-content;
+  margin-bottom: 16px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status-text {
+  text-transform: capitalize;
+}
+
+/* === Colors === */
+
+.status-open {
+  background: #e9f7ef;
+  color: #1e7d32;
+}
+
+.status-open .status-dot {
+  background: #1e7d32;
+}
+
+.status-suspended {
+  background: #fff7e6;
+  color: #c97a00;
+}
+
+.status-suspended .status-dot {
+  background: #c97a00;
+}
+
+.status-closed {
+  background: #fdecea;
+  color: #b71c1c;
+}
+
+.status-closed .status-dot {
+  background: #b71c1c;
+}
+
+.status-default {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.status-default .status-dot {
+  background: #94a3b8;
+}

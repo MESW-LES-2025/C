@@ -71,7 +71,11 @@
             </div>
 
             <h4 class="process-subtitle">Process Status</h4>
-            <p>{{ processStatusName }}</p>
+            <div class="status-badge" [ngClass]="getStatusClass(processStatusName)">
+              <span class="status-dot"></span>
+              <span class="status-text">{{ processStatusName }}</span>
+            </div>
+
 
             <h4 class="process-subtitle">Type & Phase</h4>
             <p>{{ processTypeName }} – {{ processPhaseName }}</p>
