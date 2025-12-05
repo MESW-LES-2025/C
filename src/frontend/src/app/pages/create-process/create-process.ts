@@ -73,12 +73,12 @@ export class CreateProcessComponent {
     const payload = {
       name: this.model.name,
       number: this.model.number,
-      clientId: this.model.clientId,                    // MUST be a GUID, not empty
-      lawyerId: this.auth.getUserId(),                  // MUST be a GUID
+      clientId: this.model.clientId,
+      lawyerId: this.auth.getUserId(),
       adversePartName: this.model.adversePartName,
       opposingCounselName: this.model.opposingCounselName,
-      priority: Number(this.model.priority) || 1,       // MUST be a number
-      courtInfo: this.model.courtInfo ?? "",            // MUST NOT be null
+      priority: Number(this.model.priority) || 1,
+      courtInfo: this.model.courtInfo ?? "",
       processTypePhaseId: 1,
       processStatusId: 1,
       nextHearingDate: this.model.nextHearingDate
@@ -91,7 +91,7 @@ export class CreateProcessComponent {
     this.lawyerService.createProcess(payload).subscribe({
       next: () => {
         this.submitting = false;
-        this.router.navigate(['/processes/lawyer']);
+        this.router.navigate(['/processes']);
       },
       error: (err) => {
         console.error('Failed to create process', err);
@@ -106,7 +106,7 @@ export class CreateProcessComponent {
 
   onConfirmCancel() {
     this.showCancelModal = false;
-    this.router.navigate(['/processes/lawyer']);
+    this.router.navigate(['/processes']);
   }
 
   onCloseModal() {

@@ -164,6 +164,6 @@ export class ProcessesComponent {
   }
 
   startProcess() {
-    this.router.navigate(['/processes/lawyer/create']);
+    this.router.navigate(['/processes/create']);
   }
 }
