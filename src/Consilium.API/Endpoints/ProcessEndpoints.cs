@@ -28,7 +28,7 @@ public static class ProcessEndpoints
         group.MapGet("/{id:guid}/with-documents", GetProcessByIdWithDocuments)
             .WithName("GetProcessByIdWithDocuments")
             .WithDescription("Retrieve a process by ID with its associated documents")
-            .RequireAuthorization("AdminOrLawyer");
+            .RequireAuthorization("Any");
 
         // Client-specific endpoints
         group.MapGet("/client/{clientId:guid}", GetProcessesByClient)
