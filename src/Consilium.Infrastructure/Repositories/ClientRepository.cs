@@ -210,7 +210,13 @@ namespace Consilium.Infrastructure.Repositories
             if (client == null)
                 throw new KeyNotFoundException($"Client with ID {id} not found");
 
-            // TODO: Check if client has active/open cases when PROCESS table is implemented
+            // Check if client has active/open cases
+            var hasActiveCases = await _context.Processes
+                .Include(p => p.Status)
+                .AnyAsync(p => p.ClientId == id && !p.Status.IsFinal);
+
+            if (hasActiveCases)
+                throw new InvalidOperationException("Client has active/open cases and cannot be deleted");
             
             // Delete in proper order: Phones -> Client -> User
             if (client.User?.Phones != null)

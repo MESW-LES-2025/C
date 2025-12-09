@@ -24,6 +24,7 @@ namespace Consilium.Infrastructure.Data
         public DbSet<ActionLogType> ActionLogTypes { get; set; }
         public DbSet<UserLog> UserLogs { get; set; }
         public DbSet<ProcessLog> ProcessLogs { get; set; }
+        public DbSet<Message> Messages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -106,6 +107,32 @@ namespace Consilium.Infrastructure.Data
             modelBuilder.Entity<Process>()
                 .Property(p => p.CreatedAt)
                 .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+            // Configure Message entity
+            modelBuilder.Entity<Message>()
+                .HasKey(m => m.Id);
+            
+            modelBuilder.Entity<Message>()
+                .Property(m => m.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            modelBuilder.Entity<Message>()
+                .HasOne(m => m.Process)
+                .WithMany() // Assuming Process doesn't need a collection of Messages for now, or we can add it later if needed
+                .HasForeignKey(m => m.ProcessId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Message>()
+                .HasOne(m => m.Sender)
+                .WithMany()
+                .HasForeignKey(m => m.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Message>()
+                .HasOne(m => m.Recipient)
+                .WithMany()
+                .HasForeignKey(m => m.RecipientId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
