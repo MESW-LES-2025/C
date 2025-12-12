@@ -1,0 +1,46 @@
+<div style="padding: 20px;">
+  <h1>Chat (Simple)</h1>
+
+  <!-- Receive Box -->
+  <div style="border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-bottom: 20px;">
+    <h3>Messages</h3>
+    <div *ngFor="let msg of messages">
+      <strong>{{ msg.senderName }}</strong> to <strong>{{ msg.recipientName }}</strong>:
+      <span>{{ msg.subject }} - {{ msg.body }}</span>
+      <small>({{ msg.createdAt | date:'short' }})</small>
+    </div>
+    <div *ngIf="messages.length === 0">No messages found.</div>
+  </div>
+
+  <!-- Send Form -->
+  <div style="border: 1px solid #ccc; padding: 10px;">
+    <h3>Send Message</h3>
+
+    <div style="margin-bottom: 10px;">
+      <label>Recipient ID:</label>
+      <input [(ngModel)]="selectedRecipientId" type="text" placeholder="Enter User ID (GUID)"
+        style="width: 100%; padding: 5px;">
+    </div>
+
+    <div style="margin-bottom: 10px;">
+      <label>Process ID:</label>
+      <input [(ngModel)]="selectedProcessId" type="text" placeholder="Enter Process ID (GUID)"
+        style="width: 100%; padding: 5px;">
+    </div>
+
+    <div style="margin-bottom: 10px;">
+      <label>Subject:</label>
+      <input [(ngModel)]="newMessageSubject" type="text" style="width: 100%; padding: 5px;">
+    </div>
+
+    <div style="margin-bottom: 10px;">
+      <label>Body:</label>
+      <textarea [(ngModel)]="newMessageBody" rows="3" style="width: 100%; padding: 5px;"></textarea>
+    </div>
+
+    <button (click)="sendMessage()" [disabled]="!selectedRecipientId || !selectedProcessId || !newMessageBody"
+      style="padding: 10px 20px;">
+      Send
+    </button>
+  </div>
+</div>
