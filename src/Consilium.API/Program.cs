@@ -1,16 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using System.Text.Json.Serialization;
 using Consilium.API.Endpoints;
 using Consilium.API.Services;
-using Consilium.API.Endpoints;
-using Consilium.API.Services;
 using Consilium.Application.Interfaces;
-using Consilium.Infrastructure.Data;
 using Consilium.Infrastructure.Data;
 using Consilium.Infrastructure.Repositories;
 using Consilium.Infrastructure.Services;
@@ -20,19 +14,10 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using Npgsql;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
 
-// 1. Global Configurations
 // 1. Global Configurations
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
@@ -47,33 +32,17 @@ if (builder.Environment.IsDevelopment())
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
 // 3. Connection String
-
-// 2. Environment Configurations
-if (builder.Environment.IsDevelopment())
-{
-    Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
-}
-
-JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
-
-// 3. Connection String
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "ConsiliumSecretKeyForDevelopment_MustBeAtLeast32CharactersLong";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "https://localhost:8080";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "http://localhost:4200";
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "ConsiliumSecretKeyForDevelopment_MustBeAtLeast32CharactersLong";
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "https://localhost:8080";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "http://localhost:4200";
 
-// 4. Database Connection (Ignored if Test)
 // 4. Database Connection (Ignored if Test)
 if (!builder.Environment.IsEnvironment("Test"))
 {
     builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
-    builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 }
 
-// 5. JSON Serialization
 // 5. JSON Serialization
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -113,55 +82,7 @@ builder.Services.AddAuthentication(options =>
         OnTokenValidated = LogTokenSuccess
     };
 });
-// 6. Dependency Injection (Services and Repositories)
-RegisterApplicationServices(builder.Services);
 
-// 7. Authentication Configuration (JWT)
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false; 
-    options.SaveToken = true;
-    
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtIssuer,
-        ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey ?? string.Empty)),
-        RoleClaimType = "role",       
-        NameClaimType = "username",   
-    };
-
-    options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = LogAuthFailure,
-        OnTokenValidated = LogTokenSuccess
-    };
-});
-
-// 8. Authorization Configuration
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AdminOrLawyer", policy =>
-        policy.RequireAuthenticatedUser().RequireRole("Admin", "Lawyer"));
-    
-    options.AddPolicy("OnlyAdmin", policy =>
-        policy.RequireAuthenticatedUser().RequireRole("Admin"));
-
-    options.AddPolicy("Any", policy =>
-        policy.RequireAuthenticatedUser().RequireRole("Admin", "Lawyer", "Client"));
-});
-
-// 9. Swagger and Antiforgery
-ConfigureSwagger(builder.Services);
 // 8. Authorization Configuration
 builder.Services.AddAuthorization(options =>
 {
@@ -180,31 +101,6 @@ ConfigureSwagger(builder.Services);
 builder.Services.AddAntiforgery();
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy => 
-        policy.WithOrigins(
-            "http://localhost:4200", 
-            "https://consilium-web-staging.onrender.com", 
-            "https://consilium-web-prod-ea6s.onrender.com")
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-    );
-});
-
-// 10. Rate Limiting
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString(),
-            factory: partition => new FixedWindowRateLimiterOptions
-            {
-                AutoReplenishment = true,
-                PermitLimit = 100,
-                QueueLimit = 0,
-                Window = TimeSpan.FromMinutes(1)
-            }));
     options.AddDefaultPolicy(policy => 
         policy.WithOrigins(
             "http://localhost:4200", 
