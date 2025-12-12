@@ -70,6 +70,26 @@ public class LawyerEndpointsTests : IClassFixture<WebApplicationFactory<Program>
         Assert.Equal(req.Name, createdName);
         Assert.Equal(req.ProfessionalRegister, createdReg);
     }
+    
+    [Fact]
+    public async Task GetAllLawyers_ReturnsList()
+    {
+        var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
+        
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await SeedLawyer(db);
+        }
+
+        var resp = await client.GetAsync("/api/lawyers/");
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        
+        var json = System.Text.Json.JsonDocument.Parse(await resp.Content.ReadAsStringAsync()).RootElement;
+        var data = json.GetProperty("data");
+        Assert.True(data.GetArrayLength() > 0);
+    }
 
     [Fact]
     public async Task GetLawyerById_ReturnsLawyer()
