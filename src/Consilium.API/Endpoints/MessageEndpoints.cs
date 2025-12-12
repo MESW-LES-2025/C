@@ -65,9 +65,14 @@ public static class MessageEndpoints
     private static async Task<IResult> GetMessagesByProcess(
         Guid processId,
         IMessageRepository repo,
+        IProcessRepository processRepo,
         [FromQuery] int page = 1,
         [FromQuery] int limit = 20)
     {
+        var process = await processRepo.GetById(processId);
+        if (process == null)
+            return Results.NotFound(new { message = $"Process with ID {processId} not found" });
+
         var (messages, totalCount) = await repo.GetByProcessId(processId, page, limit);
         var response = MapToResponse(messages);
         return Results.Ok(new { data = response, meta = new { totalCount, page, limit } });
@@ -76,9 +81,14 @@ public static class MessageEndpoints
     private static async Task<IResult> GetMessagesByLawyer(
         Guid lawyerId,
         IMessageRepository repo,
+        ILawyerRepository lawyerRepo,
         [FromQuery] int page = 1,
         [FromQuery] int limit = 20)
     {
+        var lawyer = await lawyerRepo.GetById(lawyerId);
+        if (lawyer == null)
+            return Results.NotFound(new { message = $"Lawyer with ID {lawyerId} not found" });
+
         var (messages, totalCount) = await repo.GetByLawyerId(lawyerId, page, limit);
         var response = MapToResponse(messages);
         return Results.Ok(new { data = response, meta = new { totalCount, page, limit } });
@@ -87,9 +97,14 @@ public static class MessageEndpoints
     private static async Task<IResult> GetMessagesByClient(
         Guid clientId,
         IMessageRepository repo,
+        IClientRepository clientRepo,
         [FromQuery] int page = 1,
         [FromQuery] int limit = 20)
     {
+        var client = await clientRepo.GetById(clientId);
+        if (client == null)
+            return Results.NotFound(new { message = $"Client with ID {clientId} not found" });
+
         var (messages, totalCount) = await repo.GetByClientId(clientId, page, limit);
         var response = MapToResponse(messages);
         return Results.Ok(new { data = response, meta = new { totalCount, page, limit } });
@@ -106,12 +121,26 @@ public static class MessageEndpoints
         return Results.Ok(new { data = response, meta = new { totalCount, page, limit } });
     }
 
-    private static async Task<IResult> CreateMessage(CreateMessageRequest request, IMessageRepository repo, IProcessRepository processRepo)
+    private static async Task<IResult> CreateMessage(
+        CreateMessageRequest request, 
+        IMessageRepository repo, 
+        IProcessRepository processRepo,
+        IUserRepository userRepo)
     {
         // Validate that the process exists
         var process = await processRepo.GetById(request.ProcessId);
         if (process == null)
             return Results.BadRequest(new { message = $"Process with ID {request.ProcessId} not found" });
+
+        // Validate that the sender exists
+        var sender = await userRepo.GetById(request.SenderId);
+        if (sender == null)
+            return Results.BadRequest(new { message = $"Sender with ID {request.SenderId} not found" });
+
+        // Validate that the recipient exists
+        var recipient = await userRepo.GetById(request.RecipientId);
+        if (recipient == null)
+            return Results.BadRequest(new { message = $"Recipient with ID {request.RecipientId} not found" });
 
         // Validate that the sender and recipient are the Lawyer and Client of the process
         bool isSenderLawyer = request.SenderId == process.LawyerId;
