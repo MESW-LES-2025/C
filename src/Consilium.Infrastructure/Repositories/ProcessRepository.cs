@@ -18,7 +18,9 @@ namespace Consilium.Infrastructure.Repositories
         {
             var query = _context.Processes
                 .Include(p => p.Client)
+                    .ThenInclude(c => c.User)
                 .Include(p => p.Lawyer)
+                    .ThenInclude(l => l.User)
                 .Include(p => p.Status)
                 .Include(p => p.ProcessTypePhase)
                     .ThenInclude(ptp => ptp!.ProcessType)
@@ -55,7 +57,9 @@ namespace Consilium.Infrastructure.Repositories
         {
             var query = _context.Processes
                 .Include(p => p.Client)
+                    .ThenInclude(c => c.User)
                 .Include(p => p.Lawyer)
+                    .ThenInclude(l => l.User)
                 .Include(p => p.Status)
                 .Include(p => p.ProcessTypePhase)
                     .ThenInclude(ptp => ptp!.ProcessType)
@@ -92,7 +96,9 @@ namespace Consilium.Infrastructure.Repositories
         {
             var processes = await _context.Processes
                 .Include(p => p.Client)
+                    .ThenInclude(c => c.User)
                 .Include(p => p.Lawyer)
+                    .ThenInclude(l => l.User)
                 .Include(p => p.Status)
                 .Include(p => p.ProcessTypePhase)
                     .ThenInclude(ptp => ptp!.ProcessType)
@@ -138,7 +144,9 @@ namespace Consilium.Infrastructure.Repositories
         {
             var processes = await _context.Processes
                 .Include(p => p.Client)
+                    .ThenInclude(c => c.User)
                 .Include(p => p.Lawyer)
+                    .ThenInclude(l => l.User)
                 .Include(p => p.Status)
                 .Include(p => p.ProcessTypePhase)
                     .ThenInclude(ptp => ptp!.ProcessType)
@@ -186,7 +194,9 @@ namespace Consilium.Infrastructure.Repositories
             // Only load document metadata (Id, FileName, FileSize, etc.)
             var process = await _context.Processes
                 .Include(p => p.Client)
+                    .ThenInclude(c => c.User)
                 .Include(p => p.Lawyer)
+                    .ThenInclude(l => l.User)
                 .Include(p => p.Status)
                 .Include(p => p.ProcessTypePhase)
                     .ThenInclude(ptp => ptp!.ProcessType)
@@ -240,7 +250,9 @@ namespace Consilium.Infrastructure.Repositories
         {
             var query = _context.Processes
                 .Include(p => p.Client)
+                    .ThenInclude(c => c.User)
                 .Include(p => p.Lawyer)
+                    .ThenInclude(l => l.User)
                 .Include(p => p.Status)
                 .Include(p => p.ProcessTypePhase)
                     .ThenInclude(ptp => ptp!.ProcessType)
