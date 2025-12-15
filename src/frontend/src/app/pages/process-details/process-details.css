@@ -354,3 +354,58 @@
 .status-default .status-dot {
   background: #94a3b8;
 }
+
+.process-type-phase {
+  position: relative;
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.timeline-rail {
+  width: 1px;
+  background-color: #e5e7eb;
+  border-radius: 2px;
+
+  position: absolute;
+  left: 4px;
+  top: 0;
+  bottom: 0;
+}
+
+.timeline-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-row {
+  font-size: 15px;
+  color: #111827;
+  line-height: 1.0;
+  margin-left: 20px;
+}
+
+.type-row{
+  color: #6b6b6b;
+}
+
+.phase-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -19px;
+  top: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+}

@@ -82,8 +82,20 @@
 
 
             <h4 class="process-subtitle">Type & Phase</h4>
-            <p>{{ processTypeName }} – {{ processPhaseName }}</p>
+            <div class="process-type-phase">
+              <div class="timeline-rail"></div>
 
+              <div class="timeline-rows">
+                <div class="timeline-row type-row">
+                  {{ processTypeName }}
+                </div>
+
+                <div class="timeline-row phase-row">
+                  <span class="timeline-dot"></span>
+                  {{ processPhaseName }}
+                </div>
+              </div>
+            </div>
 
         </section>
 
