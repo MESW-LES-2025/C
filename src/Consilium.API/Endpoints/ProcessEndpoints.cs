@@ -808,7 +808,8 @@ private static async Task<IResult> UpdateProcessWithDocuments(
         }
     }
 
-    // 5. SAVE CHANGES
+    // 5. Mark entity as modified and SAVE CHANGES
+    db.Processes.Update(existing);
     await db.SaveChangesAsync();
 
     // 6. Return updated response
