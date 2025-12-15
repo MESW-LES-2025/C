@@ -94,6 +94,13 @@
                   <span class="timeline-dot"></span>
                   {{ processPhaseName }}
                 </div>
+
+                <div
+                  class="timeline-row phase-description"
+                  *ngIf="processPhaseDescription"
+                >
+                  {{ processPhaseDescription }}
+                </div>
               </div>
             </div>
 
