@@ -2,6 +2,14 @@
 
   <div class="page-header">
     <app-page-title [title]="'Process Details'"></app-page-title>
+    <div class="page-actions" *ngIf="role === 'Lawyer' || role === 'Admin'">
+      <app-button
+        label="Edit Process"
+        icon="fa-pen"
+        [link]="['/processes', process?.id, 'edit']"
+        variant="primary"
+      ></app-button>
+    </div>
   </div>
 
   <div class="process-grid">

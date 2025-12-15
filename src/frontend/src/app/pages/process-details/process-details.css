@@ -7,6 +7,20 @@
   align-items: stretch;
 }
 
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+.page-actions {
+ 	display: flex;
+ 	gap: 12px;
+ 	align-items: center;
+  margin-bottom: 1.2rem;
+}
+
 .process-main {
   height: 100%;
   display: flex;

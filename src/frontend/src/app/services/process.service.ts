@@ -61,4 +61,11 @@ export class ProcessService {
     );
   }
 
+  updateProcess(id: string, payload: any) {
+    return this.http.patch(
+      `${environment.apiBaseUrl}/processes/${id}`,
+      payload
+    );
+  }
+
 }

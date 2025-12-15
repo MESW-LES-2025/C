@@ -1,0 +1,272 @@
+/* ===== PAGE LAYOUT ===== */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Grid kept for consistency, but single-column */
+.process-grid {
+  margin-top: 24px;
+}
+
+/* ===== MAIN ===== */
+
+.process-main {
+  display: flex;
+}
+
+/* ===== CARD ===== */
+
+.process-info {
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 24px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== TITLE & DESCRIPTION ===== */
+
+.process-title-input {
+  font-size: 20px;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  padding: 4px 0;
+  margin-bottom: 12px;
+}
+
+.process-title-input::placeholder {
+  color: #9ca3af;
+}
+
+.process-title-input:focus {
+  border-bottom: 2px solid #111827;
+}
+
+.process-description-input {
+  font-size: 15px;
+  line-height: 1.55;
+  color: #444;
+  border-radius: 12px;
+  border: 1.5px solid #f1f5f9;
+  padding: 12px;
+  resize: vertical;
+  margin-bottom: 24px;
+}
+
+/* ===== ATTACHMENTS ===== */
+
+.attachments-section {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.attachments-list-wrapper {
+  flex: 1;
+  max-height: 230px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.attachments-list-wrapper::-webkit-scrollbar {
+  width: 4px;
+}
+
+.attachments-list-wrapper::-webkit-scrollbar-thumb {
+  background: #737373;
+  border-radius: 999px;
+}
+
+.empty-documents {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: #fafafa;
+  border: 1px solid #f3f4f6;
+  margin-bottom: 8px;
+}
+
+.attachment-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.attachment-icon img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+.attachment-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.attachment-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.attachment-meta {
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  gap: 16px;
+}
+
+.attachment-delete {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.6;
+}
+
+.attachment-delete:hover {
+  opacity: 1;
+}
+
+/* ===== UPLOAD ===== */
+
+.attachments-upload {
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.upload-box {
+  min-height: 110px;
+  border-radius: 20px;
+  border: 2px dashed #f1f1f1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px;
+  font-size: 13px;
+  background-color: #fbfbfb;
+  gap: 8px;
+}
+
+.upload-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.upload-text {
+  color: #737373;
+}
+
+.upload-browse {
+  border: none;
+  background: none;
+  color: #111827;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ===== STATUS ===== */
+
+.status-select {
+  width: fit-content;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #f1f5f9;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ===== TYPE & PHASE TIMELINE ===== */
+
+.process-type-phase {
+  position: relative;
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.timeline-rail {
+  position: absolute;
+  left: 4px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: #e5e7eb;
+}
+
+.timeline-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-row {
+  margin-left: 20px;
+  font-size: 15px;
+  color: #111827;
+}
+
+.type-row {
+  color: #6b7280;
+}
+
+.phase-row {
+  position: relative;
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -19px;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+}
+
+.process-type-phase select {
+  border: none;
+  background: transparent;
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 0;
+}
+
+.process-type-phase select:focus {
+  outline: none;
+}
+
+.phase-description {
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.4;
+}

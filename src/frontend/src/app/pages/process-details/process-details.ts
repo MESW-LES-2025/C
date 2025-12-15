@@ -7,13 +7,14 @@ import { ClientService } from '../../services/client.service';
 import { LawyerService } from '../../services/lawyer.service';
 import { AuthService } from '../../services/auth.service';
 import { BreadcrumbService } from '../../shared/breadcrumb/breadcrumb.service';
+import { ButtonComponent } from '../../shared/button/button';
 
 @Component({
   selector: 'app-process-details',
   standalone: true,
   templateUrl: './process-details.html',
   styleUrls: ['./process-details.css'],
-  imports: [CommonModule, PageTitleComponent]
+  imports: [CommonModule, PageTitleComponent, ButtonComponent]
 })
 export class ProcessDetailsComponent {
 
