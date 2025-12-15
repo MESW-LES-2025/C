@@ -8,9 +8,8 @@
 }
 
 .process-main {
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 10px;
+  height: 100%;
+  display: flex;
 }
 
 .process-side {
