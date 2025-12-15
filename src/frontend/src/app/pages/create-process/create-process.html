@@ -84,6 +84,38 @@
           </div>
 
           <div class="row">
+            <div class="field">
+              <label>Process Type</label>
+              <select
+                name="processTypeId"
+                required
+                [(ngModel)]="model.processTypeId"
+                (change)="onProcessTypeChange()"
+              >
+                <option value="">-- Select type --</option>
+                <option *ngFor="let t of processTypes" [value]="t.id">
+                  {{ t.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Process Phase</label>
+              <select
+                name="processTypePhaseId"
+                required
+                [(ngModel)]="model.processTypePhaseId"
+                [disabled]="!model.processTypeId"
+              >
+                <option value="">-- Select phase --</option>
+                <option *ngFor="let tp of filteredTypePhases" [value]="tp.id">
+                  {{ tp.processPhaseName }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
             <div class="field full">
               <label>Description</label>
               <textarea

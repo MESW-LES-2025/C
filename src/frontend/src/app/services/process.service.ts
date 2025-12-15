@@ -49,4 +49,16 @@ export class ProcessService {
     return this.http.delete(`${environment.apiBaseUrl}/documents/${documentId}`);
   }
 
+  getProcessTypes() {
+    return this.http.get<any[]>(
+      `${environment.apiBaseUrl}/lookups/process-types`
+    );
+  }
+
+  getProcessPhases() {
+    return this.http.get<any[]>(
+      `${environment.apiBaseUrl}/lookups/process-phases`
+    );
+  }
+
 }
