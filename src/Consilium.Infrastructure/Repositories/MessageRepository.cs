@@ -178,4 +178,20 @@ public class MessageRepository : IMessageRepository
         
         return message;
     }
+
+    public async Task MarkMessagesAsRead(Guid processId, Guid recipientId)
+    {
+        var unreadMessages = await _context.Messages
+            .Where(m => m.ProcessId == processId && m.RecipientId == recipientId && m.ReadAt == null)
+            .ToListAsync();
+
+        if (unreadMessages.Any())
+        {
+            foreach (var msg in unreadMessages)
+            {
+                msg.ReadAt = DateTime.UtcNow;
+            }
+            await _context.SaveChangesAsync();
+        }
+    }
 }

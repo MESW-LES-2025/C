@@ -113,10 +113,48 @@
       </section>
 
       <section class="card-chat-card">
-        <h3>Chat</h3>
-        <h5>Will be the chat between lawyer and client.</h5>
+        <h3>Messages</h3>
 
-        <div class="chat-messages"></div>
+        <div class="chat-messages">
+          <div *ngIf="messages.length === 0" class="empty-chat-state">
+            <div class="empty-chat-icon">💬</div>
+            <p>No messages yet.</p>
+            <span>Start the conversation by sending a message below.</span>
+          </div>
+          <ng-container *ngFor="let msg of messages; let i = index">
+            <!-- Date Separator -->
+            <div *ngIf="isNewDay(i)" class="chat-date-separator">
+              <span>{{ msg.createdAt | date : 'mediumDate' }}</span>
+            </div>
+
+            <div
+              class="chat-bubble"
+              [ngClass]="{
+                mine: isMyMessage(msg.senderId),
+                theirs: !isMyMessage(msg.senderId)
+              }"
+            >
+              <div class="bubble-content">
+                <div class="bubble-header">
+                  <span class="bubble-subject">{{ msg.subject }}</span>
+                </div>
+
+                <div class="bubble-footer">
+                  <span class="bubble-time">{{ msg.createdAt | date : 'HH:mm' }}</span>
+                  <span class="bubble-more">See more</span>
+                  <span
+                    *ngIf="isMyMessage(msg.senderId)"
+                    class="read-receipt"
+                    [ngClass]="{ read: !!msg.readAt }"
+                  >
+                    {{ msg.readAt ? '✓✓' : '✓' }}
+                  </span>
+
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
 
         <div class="chat-input-container">
           <button

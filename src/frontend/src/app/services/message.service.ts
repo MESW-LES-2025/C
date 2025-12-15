@@ -49,4 +49,10 @@ export class MessageService {
       { params }
     );
   }
+
+  markMessagesAsRead(processId: string, recipientId: string): Observable<any> {
+    return this.http.put(`${environment.apiBaseUrl}/messages/process/${processId}/read`, {
+      recipientId,
+    });
+  }
 }

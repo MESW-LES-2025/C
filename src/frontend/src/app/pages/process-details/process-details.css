@@ -253,7 +253,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
   border: none;
   color: white;
   font-size: 24px;
@@ -279,6 +279,138 @@
   min-height: 0;
   overflow-y: auto;
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+}
+
+.empty-chat-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  text-align: center;
+  margin-top: 40px;
+}
+
+.empty-chat-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-chat-state p {
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+
+.empty-chat-state span {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+  position: relative;
+  word-wrap: break-word;
+}
+
+.chat-bubble.mine {
+  align-self: flex-end;
+  background-color: #6366f1;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble.theirs {
+  align-self: flex-start;
+  background-color: #f3f4f6;
+  color: #1f2937;
+  border-bottom-left-radius: 4px;
+}
+
+.bubble-header {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.chat-bubble.mine .bubble-header {
+  color: #e0e7ff;
+}
+
+.chat-bubble.theirs .bubble-header {
+  color: #374151;
+}
+
+.bubble-body {
+  margin-bottom: 6px;
+}
+
+.bubble-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.bubble-time {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.bubble-more {
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.read-receipt {
+  font-size: 11px;
+  margin-left: 4px;
+  color: #9ca3af;
+  letter-spacing: -1px;
+}
+
+.chat-bubble.mine .read-receipt {
+  color: #c7d2fe;
+}
+.chat-bubble.mine .read-receipt.read {
+  color: #93c5fd;
+}
+
+.chat-date-separator {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 8px;
+}
+
+.chat-date-separator span {
+  background-color: #e5e7eb;
+  color: #6b7280;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .status-badge {

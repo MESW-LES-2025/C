@@ -11,4 +11,5 @@ public interface IMessageRepository
     Task<(IEnumerable<Message> Items, int TotalCount)> GetByClientId(Guid clientId, int page, int limit);
     Task<(IEnumerable<Message> Items, int TotalCount)> GetByProcessName(string processName, int page, int limit);
     Task<Message?> UpdateLawyer(int messageId, Guid newLawyerId);
+    Task MarkMessagesAsRead(Guid processId, Guid recipientId);
 }

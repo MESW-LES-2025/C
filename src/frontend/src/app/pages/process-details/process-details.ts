@@ -33,7 +33,9 @@ export class ProcessDetailsComponent {
 
   process: any = null;
   documents: any[] = [];
+  messages: any[] = [];
   role: string | null = null;
+  currentUserId: string | null = null;
 
   processStatusName: string = '';
   processTypeName: string = '';
@@ -108,6 +110,7 @@ export class ProcessDetailsComponent {
         }
 
         this.cdr.detectChanges();
+        this.loadMessages();
       },
     });
   }
@@ -225,6 +228,52 @@ export class ProcessDetailsComponent {
     this.uploadFiles(files);
   }
 
+  loadMessages() {
+    if (!this.process?.id) return;
+    this.currentUserId = this.auth.getUserId();
+
+    this.messageService.getMessagesByProcess(this.process.id).subscribe({
+      next: (res) => {
+        this.messages = (res.data || []).sort(
+          (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        this.cdr.detectChanges();
+        setTimeout(() => this.scrollToBottom(), 100);
+
+        if (this.currentUserId) {
+          this.messageService.markMessagesAsRead(this.process.id, this.currentUserId).subscribe({
+            next: () => {},
+            error: () => {},
+          });
+        }
+      },
+      error: (err) => console.error('Failed to load messages', err),
+    });
+  }
+
+  scrollToBottom() {
+    const chatContainer = document.querySelector('.chat-messages');
+    if (chatContainer) {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+  }
+
+  isMyMessage(senderId: string): boolean {
+    return senderId === this.currentUserId;
+  }
+
+  isNewDay(index: number): boolean {
+    if (index === 0) return true;
+
+    const currentMsg = this.messages[index];
+    const prevMsg = this.messages[index - 1];
+
+    const currentDate = new Date(currentMsg.createdAt).setHours(0, 0, 0, 0);
+    const prevDate = new Date(prevMsg.createdAt).setHours(0, 0, 0, 0);
+
+    return currentDate !== prevDate;
+  }
+
   // --- Message Creation Logic ---
 
   showCreateMessageModal = false;
@@ -281,6 +330,7 @@ export class ProcessDetailsComponent {
       next: (res) => {
         this.closeCreateMessageModal();
         this.notificationService.showSuccess('Message sent successfully!');
+        this.loadMessages();
       },
       error: (err) => {
         console.error('Error sending message:', err);

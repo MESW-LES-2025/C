@@ -47,6 +47,11 @@ public static class MessageEndpoints
             .WithName("UpdateMessageLawyer")
             .WithDescription("Update the lawyer of a message")
             .RequireAuthorization("Any");
+
+        group.MapPut("/process/{processId:guid}/read", MarkMessagesAsRead)
+            .WithName("MarkMessagesAsRead")
+            .WithDescription("Mark all messages in a process as read for a recipient")
+            .RequireAuthorization("Any");
     }
 
     private static async Task<IResult> GetAllMessages(
@@ -200,6 +205,15 @@ public static class MessageEndpoints
             return Results.NotFound(new { message = $"Message with ID {id} not found" });
 
         return Results.Ok(MapToResponseSingle(updatedMessage));
+    }
+
+    private static async Task<IResult> MarkMessagesAsRead(
+        Guid processId,
+        [FromBody] MarkAsReadRequest request,
+        IMessageRepository repo)
+    {
+        await repo.MarkMessagesAsRead(processId, request.RecipientId);
+        return Results.Ok(new { message = "Messages marked as read" });
     }
 
     private static IEnumerable<MessageResponse> MapToResponse(IEnumerable<Message> messages)
