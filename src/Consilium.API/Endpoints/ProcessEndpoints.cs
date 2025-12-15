@@ -613,6 +613,8 @@ public static class ProcessEndpoints
         if (request.ClosedAt.HasValue)
             existing.ClosedAt = DateTime.SpecifyKind(request.ClosedAt.Value, DateTimeKind.Utc);
 
+        // Mark the entity as modified since repo.GetById returns a detached entity
+        db.Processes.Update(existing);
         await db.SaveChangesAsync();
         
         var updated = await repo.GetById(id);
