@@ -246,17 +246,16 @@
   align-items: center;
   justify-content: center;
   margin-top: auto;
-  padding: 12px 0;
 }
 
 .add-message-btn {
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6366f1, #4f46e5);
   border: none;
   color: white;
-  font-size: 24px;
+  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -290,6 +289,7 @@
 .chat-messages::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .chat-messages::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 999px;
@@ -325,10 +325,10 @@
 
 .chat-bubble {
   max-width: 80%;
-  padding: 12px 16px;
-  border-radius: 16px;
-  font-size: 14px;
-  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.35;
   position: relative;
   word-wrap: break-word;
 }
@@ -349,8 +349,8 @@
 
 .bubble-header {
   font-weight: 600;
-  margin-bottom: 4px;
-  font-size: 13px;
+  margin-bottom: 2px;
+  font-size: 12px;
 }
 
 .chat-bubble.mine .bubble-header {
@@ -362,14 +362,14 @@
 }
 
 .bubble-body {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .bubble-footer {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .bubble-time {
@@ -385,10 +385,56 @@
 }
 
 .read-receipt {
-  font-size: 11px;
+  font-size: 0.75rem;
   margin-left: 4px;
   color: #9ca3af;
-  letter-spacing: -1px;
+  position: relative;
+  cursor: default;
+}
+
+.read-receipt.read {
+  color: #60a5fa;
+}
+
+.read-receipt i + i {
+  margin-left: -4px;
+}
+
+.receipt-tooltip {
+  visibility: hidden;
+  background-color: #1f2937;
+  color: #fff;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  position: absolute;
+  z-index: 10;
+  bottom: 150%;
+  right: 0;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 500;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(4px);
+  pointer-events: none;
+}
+
+.receipt-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 6px;
+  border-width: 4px;
+  border-style: solid;
+  border-color: #1f2937 transparent transparent transparent;
+}
+
+.read-receipt:hover .receipt-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .chat-bubble.mine .read-receipt {

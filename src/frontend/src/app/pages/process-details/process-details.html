@@ -113,7 +113,7 @@
       </section>
 
       <section class="card-chat-card">
-        <h3>Messages</h3>
+        <h3 class="chat-title">Messages</h3>
 
         <div class="chat-messages">
           <div *ngIf="messages.length === 0" class="empty-chat-state">
@@ -141,15 +141,20 @@
 
                 <div class="bubble-footer">
                   <span class="bubble-time">{{ msg.createdAt | date : 'HH:mm' }}</span>
-                  <span class="bubble-more">See more</span>
+                  <span class="bubble-more" (click)="openMessageDetails(msg)">See more</span>
                   <span
-                    *ngIf="isMyMessage(msg.senderId)"
                     class="read-receipt"
-                    [ngClass]="{ read: !!msg.readAt }"
+                    *ngIf="msg.senderId === currentUserId"
+                    [class.read]="msg.readAt"
                   >
-                    {{ msg.readAt ? '✓✓' : '✓' }}
-                  </span>
+                    <i class="fa fa-check"></i>
+                    <i class="fa fa-check" *ngIf="msg.readAt"></i>
 
+                    <!-- Tooltip -->
+                    <div class="receipt-tooltip" *ngIf="msg.readAt">
+                      Read on {{ formatDate(msg.readAt) }}
+                    </div>
+                  </span>
                 </div>
               </div>
             </div>
@@ -167,7 +172,6 @@
         </div>
       </section>
 
-      <!-- Message Creation Modal -->
       <app-create-message-modal
         *ngIf="showCreateMessageModal"
         [senderName]="senderNameForModal"
@@ -178,4 +182,17 @@
       ></app-create-message-modal>
     </aside>
   </div>
+
+  <!-- Message Details Modal -->
+  <app-message-details-modal
+    *ngIf="showDetailsModal && selectedMessage"
+    [senderName]="selectedMessage.senderName"
+    [recipientName]="selectedMessage.recipientName"
+    [processName]="process?.name"
+    [subject]="selectedMessage.subject"
+    [body]="selectedMessage.body"
+    [date]="getMessageDate(selectedMessage)"
+    [readAt]="selectedMessage.readAt"
+    (close)="closeMessageDetails()"
+  ></app-message-details-modal>
 </section>

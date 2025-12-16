@@ -12,6 +12,7 @@ import {
   CreateMessageModalComponent,
   MessagePayload,
 } from '../../shared/create-message-modal/create-message-modal';
+import { MessageDetailsModalComponent } from '../../shared/message-details-modal/message-details-modal';
 import { NotificationService } from '../../shared/notification/notification.service';
 
 @Component({
@@ -19,7 +20,12 @@ import { NotificationService } from '../../shared/notification/notification.serv
   standalone: true,
   templateUrl: './process-details.html',
   styleUrls: ['./process-details.css'],
-  imports: [CommonModule, PageTitleComponent, CreateMessageModalComponent],
+  imports: [
+    CommonModule,
+    PageTitleComponent,
+    CreateMessageModalComponent,
+    MessageDetailsModalComponent,
+  ],
 })
 export class ProcessDetailsComponent {
   private route = inject(ActivatedRoute);
@@ -241,7 +247,8 @@ export class ProcessDetailsComponent {
         setTimeout(() => this.scrollToBottom(), 100);
 
         if (this.currentUserId) {
-          this.messageService.markMessagesAsRead(this.process.id, this.currentUserId).subscribe({
+          const userId = this.currentUserId;
+          this.messageService.markMessagesAsRead(this.process.id, userId).subscribe({
             next: () => {},
             error: () => {},
           });
@@ -300,6 +307,43 @@ export class ProcessDetailsComponent {
   closeCreateMessageModal() {
     this.showCreateMessageModal = false;
     this.cdr.detectChanges();
+  }
+
+  // --- Message Details Logic ---
+  showDetailsModal = false;
+  selectedMessage: any = null;
+
+  openMessageDetails(msg: any) {
+    console.log('Opening message details:', msg);
+    this.selectedMessage = msg;
+    this.showDetailsModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeMessageDetails() {
+    this.showDetailsModal = false;
+    this.selectedMessage = null;
+    this.cdr.detectChanges();
+  }
+
+  getMessageDate(msg: any): string {
+    if (!msg || !msg.createdAt) return '';
+    return this.formatDate(msg.createdAt);
+  }
+
+  formatDate(dateStr: string | Date): string {
+    if (!dateStr) return '';
+    try {
+      return new Date(dateStr).toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (e) {
+      return '';
+    }
   }
 
   handleMessageCreate(payload: MessagePayload) {
