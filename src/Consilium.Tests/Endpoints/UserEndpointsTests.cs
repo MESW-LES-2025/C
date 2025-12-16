@@ -1,477 +1,150 @@
-using Moq;
-using Consilium.Application.Interfaces;
+using System.Net;
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Consilium.Domain.Models;
-using Consilium.Domain.Enums;
+using Consilium.Infrastructure.Data;
 using Consilium.API.Dtos;
+using Consilium.Tests.TestHelpers;
+using Xunit;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Consilium.Tests.Endpoints;
 
-/// <summary>
-/// Tests for User Endpoints business logic
-/// These tests validate the repository interactions and data transformations
-/// that occur in the UserEndpoints
-/// </summary>
-public class UserEndpointsTests
+public class UserEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
-    private readonly Mock<IUserRepository> _mockUserRepo;
-    private readonly Mock<IClientRepository> _mockClientRepo;
+    private readonly WebApplicationFactory<Program> _factory;
 
-    public UserEndpointsTests()
+    public UserEndpointsTests(WebApplicationFactory<Program> factory)
     {
-        _mockUserRepo = new Mock<IUserRepository>();
-        _mockClientRepo = new Mock<IClientRepository>();
-    }
-
-    #region GetAllUsers Tests
-
-    [Fact]
-    public async Task GetAllUsers_ReturnsAllUsers()
-    {
-        // Arrange
-        var users = new List<User>
+        var dbName = "TestDb_Users_" + Guid.NewGuid();
+        _factory = factory.WithWebHostBuilder(builder =>
         {
-            new User
+            builder.UseEnvironment("Test");
+            builder.ConfigureServices(services =>
             {
-                ID = Guid.NewGuid(),
-                Name = "User One",
-                Email = "user1@test.com",
-                NIF = "123456789",
-                IsActive = true
-            },
-            new User
-            {
-                ID = Guid.NewGuid(),
-                Name = "User Two",
-                Email = "user2@test.com",
-                NIF = "987654321",
-                IsActive = false
-            }
-        };
+                var descriptors = services.Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>) || d.ServiceType == typeof(AppDbContext)).ToList();
+                foreach (var d in descriptors)
+                {
+                    services.Remove(d);
+                }
 
-        _mockUserRepo.Setup(r => r.GetAll()).ReturnsAsync(users);
-
-        // Act
-        var result = await _mockUserRepo.Object.GetAll();
-
-        // Assert
-        Assert.Equal(2, result.Count);
-        Assert.Equal("User One", result[0].Name);
-        Assert.Equal("User Two", result[1].Name);
+                services.AddDbContext<AppDbContext>(options =>
+                {
+                    options.UseInMemoryDatabase(dbName);
+                    options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
+                });
+            });
+        });
     }
 
-    [Fact]
-    public async Task GetAllUsers_EmptyList_ReturnsEmptyList()
+    private async Task SeedUsers(AppDbContext db)
     {
-        // Arrange
-        var users = new List<User>();
-        _mockUserRepo.Setup(r => r.GetAll()).ReturnsAsync(users);
-
-        // Act
-        var result = await _mockUserRepo.Object.GetAll();
-
-        // Assert
-        Assert.Empty(result);
-    }
-
-    [Fact]
-    public async Task GetAllUsers_MapsToUserResponse_Correctly()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new User
-            {
-                ID = Guid.NewGuid(),
-                Name = "Test User",
-                Email = "test@test.com",
-                NIF = "123456789",
-                IsActive = true
-            }
-        };
-
-        _mockUserRepo.Setup(r => r.GetAll()).ReturnsAsync(users);
-
-        // Act
-        var result = await _mockUserRepo.Object.GetAll();
-        var responses = result.Select(u => new UserResponse(
-            Id: u.ID,
-            Email: u.Email,
-            Name: u.Name,
-            Status: u.IsActive ? UserStatus.ACTIVE : UserStatus.INACTIVE
-        )).ToList();
-
-        // Assert
-        Assert.Single(responses);
-        Assert.Equal("Test User", responses[0].Name);
-        Assert.Equal(UserStatus.ACTIVE, responses[0].Status);
-    }
-
-    #endregion
-
-    #region GetUserById Tests
-
-    [Fact]
-    public async Task GetUserById_ExistingUser_ReturnsUser()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = new User
-        {
-            ID = userId,
-            Name = "Test User",
-            Email = "test@test.com",
-            NIF = "123456789",
-            IsActive = true
-        };
-
-        _mockUserRepo.Setup(r => r.GetById(userId)).ReturnsAsync(user);
-
-        // Act
-        var result = await _mockUserRepo.Object.GetById(userId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(userId, result.ID);
-        Assert.Equal("Test User", result.Name);
-        Assert.Equal("test@test.com", result.Email);
-    }
-
-    [Fact]
-    public async Task GetUserById_NonExistingUser_ReturnsNull()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        _mockUserRepo.Setup(r => r.GetById(userId)).ReturnsAsync((User?)null);
-
-        // Act
-        var result = await _mockUserRepo.Object.GetById(userId);
-
-        // Assert
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public async Task GetUserById_MapsToUserResponse_Correctly()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = new User
-        {
-            ID = userId,
-            Name = "Test User",
-            Email = "test@test.com",
-            NIF = "123456789",
-            IsActive = true
-        };
-
-        _mockUserRepo.Setup(r => r.GetById(userId)).ReturnsAsync(user);
-
-        // Act
-        var result = await _mockUserRepo.Object.GetById(userId);
-        var response = new UserResponse(
-            Id: result!.ID,
-            Email: result.Email,
-            Name: result.Name,
-            Status: result.IsActive ? UserStatus.ACTIVE : UserStatus.INACTIVE
-        );
-
-        // Assert
-        Assert.Equal(userId, response.Id);
-        Assert.Equal("Test User", response.Name);
-        Assert.Equal(UserStatus.ACTIVE, response.Status);
-    }
-
-    #endregion
-
-    #region DeleteUser Tests
-
-    [Fact]
-    public async Task DeleteUser_ExistingUser_DeletesSuccessfully()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        _mockClientRepo.Setup(r => r.Delete(userId)).Returns(Task.CompletedTask);
-
-        // Act
-        await _mockClientRepo.Object.Delete(userId);
-
-        // Assert
-        _mockClientRepo.Verify(r => r.Delete(userId), Times.Once);
-    }
-
-    [Fact]
-    public async Task DeleteUser_NonExistingUser_ThrowsKeyNotFoundException()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        _mockClientRepo.Setup(r => r.Delete(userId)).ThrowsAsync(new KeyNotFoundException());
-
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _mockClientRepo.Object.Delete(userId));
-    }
-
-    [Fact]
-    public async Task DeleteUser_CascadesDeleteToRelatedEntities()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
+        await AuthTestHelper.SeedAuthUser(db);
         
-        // The ClientRepository.Delete should handle cascade deletion
-        _mockClientRepo.Setup(r => r.Delete(userId)).Returns(Task.CompletedTask);
-
-        // Act
-        await _mockClientRepo.Object.Delete(userId);
-
-        // Assert
-        // Verify that delete was called, which internally handles cascade
-        _mockClientRepo.Verify(r => r.Delete(userId), Times.Once);
+        var u1 = new User { ID = Guid.NewGuid(), Name = "U1", Email = "u1@t.com", NIF = "1", PasswordHash = "x", IsActive = true };
+        var c1 = new Client { ID = u1.ID, Address = "Addr1" };
+        var u2 = new User { ID = Guid.NewGuid(), Name = "U2", Email = "u2@t.com", NIF = "2", PasswordHash = "x", IsActive = false };
+        var c2 = new Client { ID = u2.ID, Address = "Addr2" };
+        
+        await db.Users.AddRangeAsync(u1, u2);
+        await db.Clients.AddRangeAsync(c1, c2);
+        await db.SaveChangesAsync();
     }
 
-    #endregion
-
-    #region UserResponse Mapping Tests
+    private System.Text.Json.JsonSerializerOptions _jsonOptions = new System.Text.Json.JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    };
 
     [Fact]
-    public void UserResponse_ActiveUser_MapsStatusCorrectly()
+    public async Task GetAllUsers_ReturnsUsers()
     {
-        // Arrange
-        var user = new User
+        var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
+        
+        using (var scope = _factory.Services.CreateScope())
         {
-            ID = Guid.NewGuid(),
-            Name = "Active User",
-            Email = "active@test.com",
-            NIF = "123456789",
-            IsActive = true
-        };
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            // Clear existing users to match assertion count if needed, but SeedUsers adds 2 + AuthUser = 3
+            // In-memory DB persists across requests in same test run if context is reused, but here we scope per request.
+            // Wait, WebApplicationFactory shares the InMemory DB instance if configured with the same name.
+            // My constructor generates a unique DB name per test class instance.
+            await SeedUsers(db);
+        }
 
-        // Act
-        var response = new UserResponse(
-            Id: user.ID,
-            Email: user.Email,
-            Name: user.Name,
-            Status: user.IsActive ? UserStatus.ACTIVE : UserStatus.INACTIVE
-        );
-
-        // Assert
-        Assert.Equal(UserStatus.ACTIVE, response.Status);
+        var response = await client.GetAsync("/api/users");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        
+        var users = await response.Content.ReadFromJsonAsync<List<UserResponse>>(_jsonOptions);
+        Assert.NotNull(users);
+        Assert.True(users.Count >= 2);
     }
 
     [Fact]
-    public void UserResponse_InactiveUser_MapsStatusCorrectly()
+    public async Task GetUserById_ReturnsUser()
     {
-        // Arrange
-        var user = new User
+        var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
+        
+        Guid userId;
+        using (var scope = _factory.Services.CreateScope())
         {
-            ID = Guid.NewGuid(),
-            Name = "Inactive User",
-            Email = "inactive@test.com",
-            NIF = "123456789",
-            IsActive = false
-        };
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await SeedUsers(db);
+            userId = await db.Users.Where(u => u.Name == "U1").Select(u => u.ID).FirstAsync();
+        }
 
-        // Act
-        var response = new UserResponse(
-            Id: user.ID,
-            Email: user.Email,
-            Name: user.Name,
-            Status: user.IsActive ? UserStatus.ACTIVE : UserStatus.INACTIVE
-        );
-
-        // Assert
-        Assert.Equal(UserStatus.INACTIVE, response.Status);
+        var response = await client.GetAsync($"/api/users/{userId}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var user = await response.Content.ReadFromJsonAsync<UserResponse>(_jsonOptions);
+        Assert.Equal("U1", user!.Name);
     }
 
     [Fact]
-    public void UserResponse_MapsAllFields_Correctly()
+    public async Task GetUserById_NotFound_ReturnsNotFound()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = new User
+        var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
+        var response = await client.GetAsync($"/api/users/{Guid.NewGuid()}");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task DeleteUser_DeletesUser()
+    {
+        var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
+        
+        Guid userId;
+        using (var scope = _factory.Services.CreateScope())
         {
-            ID = userId,
-            Name = "Complete User",
-            Email = "complete@test.com",
-            NIF = "123456789",
-            IsActive = true
-        };
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await SeedUsers(db);
+            userId = await db.Users.Where(u => u.Name == "U2").Select(u => u.ID).FirstAsync();
+        }
 
-        // Act
-        var response = new UserResponse(
-            Id: user.ID,
-            Email: user.Email,
-            Name: user.Name,
-            Status: user.IsActive ? UserStatus.ACTIVE : UserStatus.INACTIVE
-        );
-
-        // Assert
-        Assert.Equal(userId, response.Id);
-        Assert.Equal("Complete User", response.Name);
-        Assert.Equal("complete@test.com", response.Email);
-        Assert.Equal(UserStatus.ACTIVE, response.Status);
-    }
-
-    #endregion
-
-    #region User Collection Operations Tests
-
-    [Fact]
-    public async Task GetAllUsers_WithMultipleUsers_PreservesOrder()
-    {
-        // Arrange
-        var users = new List<User>
+        var response = await client.DeleteAsync($"/api/users/{userId}");
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        
+        using (var scope = _factory.Services.CreateScope())
         {
-            new User { ID = Guid.NewGuid(), Name = "Alice", Email = "alice@test.com", NIF = "111111111", IsActive = true },
-            new User { ID = Guid.NewGuid(), Name = "Bob", Email = "bob@test.com", NIF = "222222222", IsActive = true },
-            new User { ID = Guid.NewGuid(), Name = "Charlie", Email = "charlie@test.com", NIF = "333333333", IsActive = true }
-        };
-
-        _mockUserRepo.Setup(r => r.GetAll()).ReturnsAsync(users);
-
-        // Act
-        var result = await _mockUserRepo.Object.GetAll();
-
-        // Assert
-        Assert.Equal(3, result.Count);
-        Assert.Equal("Alice", result[0].Name);
-        Assert.Equal("Bob", result[1].Name);
-        Assert.Equal("Charlie", result[2].Name);
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var u = await db.Users.FindAsync(userId);
+            Assert.Null(u);
+        }
     }
-
+    
     [Fact]
-    public async Task GetAllUsers_WithMixedStatus_ReturnsAllUsers()
+    public async Task DeleteUser_NotFound_ReturnsNotFound()
     {
-        // Arrange
-        var users = new List<User>
-        {
-            new User { ID = Guid.NewGuid(), Name = "Active User", Email = "active@test.com", NIF = "111111111", IsActive = true },
-            new User { ID = Guid.NewGuid(), Name = "Inactive User", Email = "inactive@test.com", NIF = "222222222", IsActive = false }
-        };
-
-        _mockUserRepo.Setup(r => r.GetAll()).ReturnsAsync(users);
-
-        // Act
-        var result = await _mockUserRepo.Object.GetAll();
-
-        // Assert
-        Assert.Equal(2, result.Count);
-        Assert.True(result[0].IsActive);
-        Assert.False(result[1].IsActive);
+        var client = _factory.CreateClient();
+        await client.AddTestAuth(_factory);
+        var response = await client.DeleteAsync($"/api/users/{Guid.NewGuid()}");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
-
-    #endregion
-
-    #region Repository Interaction Tests
-
-    [Fact]
-    public async Task UserRepository_GetAll_CalledOnce()
-    {
-        // Arrange
-        var users = new List<User>();
-        _mockUserRepo.Setup(r => r.GetAll()).ReturnsAsync(users);
-
-        // Act
-        await _mockUserRepo.Object.GetAll();
-
-        // Assert
-        _mockUserRepo.Verify(r => r.GetAll(), Times.Once);
-    }
-
-    [Fact]
-    public async Task UserRepository_GetById_CalledWithCorrectId()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = new User { ID = userId, Name = "Test", Email = "test@test.com", NIF = "123456789", IsActive = true };
-        _mockUserRepo.Setup(r => r.GetById(userId)).ReturnsAsync(user);
-
-        // Act
-        await _mockUserRepo.Object.GetById(userId);
-
-        // Assert
-        _mockUserRepo.Verify(r => r.GetById(userId), Times.Once);
-    }
-
-    [Fact]
-    public async Task ClientRepository_Delete_CalledWithCorrectId()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        _mockClientRepo.Setup(r => r.Delete(userId)).Returns(Task.CompletedTask);
-
-        // Act
-        await _mockClientRepo.Object.Delete(userId);
-
-        // Assert
-        _mockClientRepo.Verify(r => r.Delete(userId), Times.Once);
-    }
-
-    #endregion
-
-    #region Edge Cases
-
-    [Fact]
-    public async Task GetUserById_WithEmptyGuid_ReturnsNull()
-    {
-        // Arrange
-        var emptyGuid = Guid.Empty;
-        _mockUserRepo.Setup(r => r.GetById(emptyGuid)).ReturnsAsync((User?)null);
-
-        // Act
-        var result = await _mockUserRepo.Object.GetById(emptyGuid);
-
-        // Assert
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public async Task GetAllUsers_LargeDataSet_HandlesCorrectly()
-    {
-        // Arrange
-        var users = Enumerable.Range(1, 1000)
-            .Select(i => new User
-            {
-                ID = Guid.NewGuid(),
-                Name = $"User {i}",
-                Email = $"user{i}@test.com",
-                NIF = $"{i:D9}",
-                IsActive = i % 2 == 0
-            }).ToList();
-
-        _mockUserRepo.Setup(r => r.GetAll()).ReturnsAsync(users);
-
-        // Act
-        var result = await _mockUserRepo.Object.GetAll();
-
-        // Assert
-        Assert.Equal(1000, result.Count);
-        Assert.Equal("User 1", result[0].Name);
-        Assert.Equal("User 1000", result[999].Name);
-    }
-
-    [Fact]
-    public void UserResponse_WithEmptyEmail_HandlesCorrectly()
-    {
-        // Arrange
-        var user = new User
-        {
-            ID = Guid.NewGuid(),
-            Name = "User",
-            Email = string.Empty,
-            NIF = "123456789",
-            IsActive = true
-        };
-
-        // Act
-        var response = new UserResponse(
-            Id: user.ID,
-            Email: user.Email,
-            Name: user.Name,
-            Status: user.IsActive ? UserStatus.ACTIVE : UserStatus.INACTIVE
-        );
-
-        // Assert
-        Assert.Equal(string.Empty, response.Email);
-    }
-
-    #endregion
 }
