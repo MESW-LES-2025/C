@@ -29,7 +29,7 @@
           </div>
         </div>
 
-        <div class="status-badge" [class.read]="!!readAt">
+        <div class="status-badge" *ngIf="isMine" [class.read]="!!readAt">
           {{ readAt ? 'Read' : 'Unread' }}
           <div class="tooltip" *ngIf="readAt">Read on {{ getFormattedDate(readAt) }}</div>
         </div>
@@ -40,6 +40,10 @@
       <div class="message-content">
         {{ body }}
       </div>
+    </div>
+
+    <div class="msg-footer">
+      <button class="reply-btn" (click)="onReply()"><i class="fa fa-reply"></i> Reply</button>
     </div>
   </div>
 </div>

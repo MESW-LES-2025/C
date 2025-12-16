@@ -19,6 +19,7 @@ export class CreateMessageModalComponent {
   @Input() senderName: string = '';
   @Input() recipientName: string = '';
   @Input() processName: string = '';
+  @Input() initialSubject: string = '';
 
   // Outputs for actions
   @Output() cancel = new EventEmitter<void>();
@@ -29,6 +30,12 @@ export class CreateMessageModalComponent {
   body: string = '';
 
   constructor() {}
+
+  ngOnInit() {
+    if (this.initialSubject) {
+      this.subject = this.initialSubject;
+    }
+  }
 
   onCancel() {
     this.cancel.emit();

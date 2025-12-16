@@ -140,7 +140,17 @@
                 </div>
 
                 <div class="bubble-footer">
+                  <span
+                    class="bubble-action"
+                    *ngIf="!isMyMessage(msg.senderId)"
+                    (click)="onReply(msg)"
+                    title="Reply"
+                  >
+                    <i class="fa fa-reply"></i>
+                  </span>
+
                   <span class="bubble-time">{{ msg.createdAt | date : 'HH:mm' }}</span>
+
                   <span class="bubble-more" (click)="openMessageDetails(msg)">See more</span>
                   <span
                     class="read-receipt"
@@ -163,6 +173,7 @@
 
         <div class="chat-input-container">
           <button
+            *ngIf="canSendMessage()"
             class="add-message-btn"
             (click)="openCreateMessageModal()"
             title="Create New Message"
@@ -179,6 +190,7 @@
         [processName]="process?.name || ''"
         (cancel)="closeCreateMessageModal()"
         (send)="handleMessageCreate($event)"
+        [initialSubject]="currentPrefillSubject"
       ></app-create-message-modal>
     </aside>
   </div>
@@ -193,6 +205,8 @@
     [body]="selectedMessage.body"
     [date]="getMessageDate(selectedMessage)"
     [readAt]="selectedMessage.readAt"
+    [isMine]="isMyMessage(selectedMessage.senderId)"
     (close)="closeMessageDetails()"
+    (reply)="onReply(selectedMessage)"
   ></app-message-details-modal>
 </section>

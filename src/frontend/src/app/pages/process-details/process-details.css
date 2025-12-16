@@ -518,3 +518,28 @@
 .status-default .status-dot {
   background: #94a3b8;
 }
+
+/* Reply Icon */
+.bubble-action {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-right: 2px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  display: inline-flex;
+  align-items: center;
+}
+
+.bubble-action:hover {
+  opacity: 1;
+  color: #6366f1;
+}
+
+.chat-bubble.mine .bubble-action {
+  color: #e0e7ff;
+}
+
+.chat-bubble.mine .bubble-action:hover {
+  color: white;
+}

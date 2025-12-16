@@ -16,11 +16,17 @@ export class MessageDetailsModalComponent {
   @Input() body: string = '';
   @Input() date: string = '';
   @Input() readAt: string | null = null;
+  @Input() isMine: boolean = false;
 
   @Output() close = new EventEmitter<void>();
+  @Output() reply = new EventEmitter<void>();
 
   onClose() {
     this.close.emit();
+  }
+
+  onReply() {
+    this.reply.emit();
   }
 
   onBackdropClick(event: MouseEvent) {

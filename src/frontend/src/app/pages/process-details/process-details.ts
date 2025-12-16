@@ -287,7 +287,13 @@ export class ProcessDetailsComponent {
   senderNameForModal = '';
   recipientNameForModal = '';
 
-  openCreateMessageModal() {
+  canSendMessage(): boolean {
+    if (this.role === 'Client') return true;
+    if (this.role === 'Lawyer') return false;
+    return true;
+  }
+
+  openCreateMessageModal(prefillSubject: string = '') {
     if (!this.process || !this.role) return;
 
     if (this.role === 'Lawyer') {
@@ -302,6 +308,16 @@ export class ProcessDetailsComponent {
     }
 
     this.showCreateMessageModal = true;
+    this.currentPrefillSubject = prefillSubject;
+    this.cdr.detectChanges();
+  }
+
+  currentPrefillSubject = '';
+
+  onReply(msg: any) {
+    const subject = msg.subject.startsWith('Re:') ? msg.subject : `Re: ${msg.subject}`;
+    this.closeMessageDetails();
+    this.openCreateMessageModal(subject);
   }
 
   closeCreateMessageModal() {
