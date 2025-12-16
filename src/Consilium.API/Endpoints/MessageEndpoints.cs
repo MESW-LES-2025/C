@@ -1,4 +1,5 @@
 using Consilium.API.Dtos;
+using Consilium.Application.Dtos;
 using Consilium.Application.Interfaces;
 using Consilium.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -51,6 +52,11 @@ public static class MessageEndpoints
         group.MapPut("/process/{processId:guid}/read", MarkMessagesAsRead)
             .WithName("MarkMessagesAsRead")
             .WithDescription("Mark all messages in a process as read for a recipient")
+            .RequireAuthorization("Any");
+
+        group.MapGet("/unread-count/{userId:guid}", GetUnreadCount)
+            .WithName("GetUnreadCount")
+            .WithDescription("Get count of unread messages for a user")
             .RequireAuthorization("Any");
     }
 
@@ -214,6 +220,15 @@ public static class MessageEndpoints
     {
         await repo.MarkMessagesAsRead(processId, request.RecipientId);
         return Results.Ok(new { message = "Messages marked as read" });
+    }
+
+    private static async Task<IResult> GetUnreadCount(
+        Guid userId,
+        IMessageRepository repo)
+    {
+        var total = await repo.GetUnreadCount(userId);
+        var byProcess = await repo.GetUnreadCountsByProcess(userId);
+        return Results.Ok(new { total, byProcess });
     }
 
     private static IEnumerable<MessageResponse> MapToResponse(IEnumerable<Message> messages)

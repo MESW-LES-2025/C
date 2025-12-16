@@ -1,0 +1,82 @@
+<div class="dashboard-container">
+  <div class="welcome-banner">
+    <h1>Welcome back, {{ userName }}</h1>
+    <p>Track your legal processes and communicate with your lawyer.</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon-wrapper">
+        <i class="fa fa-gavel"></i>
+      </div>
+      <div>
+        <h3>Active Processes</h3>
+        <p class="stat-value">{{ activeProcessesCount }}</p>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.has-unread]="unreadCount > 0">
+      <div
+        class="stat-icon-wrapper"
+        [style.background]="unreadCount > 0 ? '#fff1f2' : '#f3f4f6'"
+        [style.color]="unreadCount > 0 ? '#e11d48' : '#6b7280'"
+      >
+        <i class="fa fa-envelope"></i>
+      </div>
+      <div style="flex: 1">
+        <h3>Unread Messages</h3>
+        <p class="stat-value" [style.color]="unreadCount > 0 ? '#e11d48' : ''">{{ unreadCount }}</p>
+
+        <div class="unread-list" *ngIf="unreadCount > 0">
+          <div
+            *ngFor="let item of unreadProcesses"
+            class="unread-item"
+            [routerLink]="['/processes', item.processId]"
+          >
+            <div class="u-info">
+              <i class="fa fa-comment-dots u-icon"></i>
+              <span class="u-name">{{ item.processName }}</span>
+            </div>
+            <div class="u-meta">
+              <span class="badg">{{ item.count }}</span>
+              <i class="fa fa-chevron-right u-arrow"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <h2>My Recent Processes</h2>
+
+    <div class="loader-container" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="process-list" *ngIf="!loading && processes.length > 0">
+      <div
+        class="process-card"
+        *ngFor="let p of processes"
+        [routerLink]="['/processes', p.processId]"
+      >
+        <div class="p-info">
+          <span class="p-number">{{ p.number }}</span>
+          <h3 class="p-name">{{ p.name }}</h3>
+        </div>
+        <div class="p-status">
+          <span class="status-pill" [ngClass]="getStatusClass(p.processStatusId)">{{
+            getStatusName(p.processStatusId)
+          }}</span>
+        </div>
+        <i class="fa fa-chevron-right action-icon"></i>
+      </div>
+    </div>
+
+    <div class="placeholder-list" *ngIf="!loading && processes.length === 0">
+      <i class="fa fa-folder-open empty-icon"></i>
+      <p>No processes found.</p>
+      <span>Contact your lawyer to start a new process.</span>
+    </div>
+  </div>
+</div>

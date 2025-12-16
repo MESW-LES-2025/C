@@ -1,5 +1,6 @@
 using Consilium.Application.Interfaces;
 using Consilium.Domain.Models;
+using Consilium.Application.Dtos;
 using Microsoft.EntityFrameworkCore;
 
 namespace Consilium.Infrastructure.Data;
@@ -193,5 +194,20 @@ public class MessageRepository : IMessageRepository
             }
             await _context.SaveChangesAsync();
         }
+    }
+
+    public async Task<int> GetUnreadCount(Guid userId)
+    {
+        return await _context.Messages
+            .CountAsync(m => m.RecipientId == userId && m.ReadAt == null);
+    }
+
+    public async Task<IEnumerable<UnreadProcessStats>> GetUnreadCountsByProcess(Guid userId)
+    {
+        return await _context.Messages
+            .Where(m => m.RecipientId == userId && m.ReadAt == null)
+            .GroupBy(m => new { m.ProcessId, m.Process.Name, m.Process.Number })
+            .Select(g => new UnreadProcessStats(g.Key.ProcessId, g.Key.Name, g.Key.Number, g.Count()))
+            .ToListAsync();
     }
 }
