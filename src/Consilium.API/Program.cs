@@ -159,6 +159,7 @@ app.MapClientEndpoints();
 app.MapLawyerEndpoints();
 app.MapAdminEndpoints();
 app.MapProcessEndpoints();
+app.MapMessageEndpoints();
 app.MapDocumentEndpoints();
 app.MapLookupEndpoints();
 
@@ -172,6 +173,7 @@ void RegisterApplicationServices(IServiceCollection services)
     services.AddScoped<ILawyerRepository, LawyerRepository>();
     services.AddScoped<IAdminRepository, AdminRepository>();
     services.AddScoped<IProcessRepository, ProcessRepository>();
+    services.AddScoped<IMessageRepository, MessageRepository>();
     services.AddScoped<IPasswordHasher, PasswordHasher>();
     services.AddScoped<JwtTokenService>();
     services.AddEndpointsApiExplorer();

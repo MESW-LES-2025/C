@@ -209,7 +209,11 @@ namespace Consilium.Infrastructure.Repositories
                 throw new KeyNotFoundException($"Lawyer with ID {id} not found");
 
             // Check if lawyer has active/open cases
-            var hasActiveCases = await _context.Processes.AnyAsync(p => p.LawyerId == id);
+            // Check if lawyer has active/open cases
+            var hasActiveCases = await _context.Processes
+                .Include(p => p.Status)
+                .AnyAsync(p => p.LawyerId == id && !p.Status.IsFinal);
+
             if (hasActiveCases)
                 throw new InvalidOperationException("Lawyer has active/open cases and cannot be deleted");
             
