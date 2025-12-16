@@ -39,14 +39,18 @@
         />
       </div>
 
-      <div class="input-group flex-grow">
-        <label for="msg-body">Message</label>
+      <div class="form-group">
+        <label for="body">Message</label>
         <textarea
-          id="msg-body"
+          id="body"
           [(ngModel)]="body"
-          placeholder="Type your message here..."
+          name="body"
+          rows="6"
+          required
+          maxlength="240"
           class="user-input body-input"
         ></textarea>
+        <div class="char-count" [class.error]="body.length > 240">{{ body.length }} / 240</div>
       </div>
     </div>
 

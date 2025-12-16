@@ -20,6 +20,7 @@ export class CreateMessageModalComponent {
   @Input() recipientName: string = '';
   @Input() processName: string = '';
   @Input() initialSubject: string = '';
+  @Input() initialBody: string = '';
 
   // Outputs for actions
   @Output() cancel = new EventEmitter<void>();
@@ -34,6 +35,9 @@ export class CreateMessageModalComponent {
   ngOnInit() {
     if (this.initialSubject) {
       this.subject = this.initialSubject;
+    }
+    if (this.initialBody) {
+      this.body = this.initialBody;
     }
   }
 
@@ -51,7 +55,11 @@ export class CreateMessageModalComponent {
   }
 
   isValid(): boolean {
-    return this.subject.trim().length > 0 && this.body.trim().length > 0;
+    return this.subject.trim().length > 0 && this.body.trim().length > 0 && this.body.length <= 240;
+  }
+
+  get bodyLength(): number {
+    return this.body.length;
   }
 
   onBackdropClick(event: MouseEvent) {

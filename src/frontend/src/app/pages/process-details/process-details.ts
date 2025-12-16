@@ -293,7 +293,7 @@ export class ProcessDetailsComponent {
     return true;
   }
 
-  openCreateMessageModal(prefillSubject: string = '') {
+  openCreateMessageModal(prefillSubject: string = '', prefillBody: string = '') {
     if (!this.process || !this.role) return;
 
     if (this.role === 'Lawyer') {
@@ -309,15 +309,27 @@ export class ProcessDetailsComponent {
 
     this.showCreateMessageModal = true;
     this.currentPrefillSubject = prefillSubject;
+    this.currentPrefillBody = prefillBody;
     this.cdr.detectChanges();
   }
 
   currentPrefillSubject = '';
+  currentPrefillBody = '';
 
   onReply(msg: any) {
     const subject = msg.subject.startsWith('Re:') ? msg.subject : `Re: ${msg.subject}`;
+    const dateStr = new Date(msg.createdAt).toLocaleDateString();
+
+    const replyBody = `
+
+------------ original message ------------
+From: ${msg.senderName || 'Unknown'} (${dateStr})
+Subject: ${msg.subject}
+
+${msg.body.substring(0, 40)}${msg.body.length > 40 ? '...' : ''}`;
+
     this.closeMessageDetails();
-    this.openCreateMessageModal(subject);
+    this.openCreateMessageModal(subject, replyBody);
   }
 
   closeCreateMessageModal() {
