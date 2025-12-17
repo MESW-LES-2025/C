@@ -1,4 +1,5 @@
 using Consilium.Domain.Models;
+using Consilium.Application.Dtos;
 
 namespace Consilium.Application.Interfaces;
 
@@ -12,4 +13,6 @@ public interface IMessageRepository
     Task<(IEnumerable<Message> Items, int TotalCount)> GetByProcessName(string processName, int page, int limit);
     Task<Message?> UpdateLawyer(int messageId, Guid newLawyerId);
     Task MarkMessagesAsRead(Guid processId, Guid recipientId);
+    Task<int> GetUnreadCount(Guid userId);
+    Task<IEnumerable<UnreadProcessStats>> GetUnreadCountsByProcess(Guid userId);
 }

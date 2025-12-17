@@ -6,7 +6,6 @@ import { delay, catchError } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class ProcessService {
-
   private useMock = false;
 
   constructor(private http: HttpClient) {}
@@ -19,11 +18,23 @@ export class ProcessService {
         description: 'Example mock description.',
         client: { id: '1', name: 'Mock Client' },
         lawyer: { id: '2', name: 'Mock Lawyer' },
-        documents: []
+        documents: [],
       }).pipe(delay(200));
     }
 
     return this.http.get<any>(`${environment.apiBaseUrl}/processes/${id}`);
+  }
+
+  getProcesses(params: any = {}): Observable<any> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/processes`, { params });
+  }
+
+  getProcessesByClient(clientId: string): Observable<any> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/processes/client/${clientId}`);
+  }
+
+  getProcessesByLawyer(lawyerId: string): Observable<any> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/processes/lawyer/${lawyerId}`);
   }
 
   getProcessWithDocuments(id: string) {
@@ -32,8 +43,8 @@ export class ProcessService {
 
   uploadFiles(processId: string, formData: FormData) {
     return this.http.patch(
-        `${environment.apiBaseUrl}/processes/${processId}/with-documents`,
-        formData
+      `${environment.apiBaseUrl}/processes/${processId}/with-documents`,
+      formData
     );
   }
 
@@ -48,5 +59,4 @@ export class ProcessService {
   deleteDocument(documentId: string) {
     return this.http.delete(`${environment.apiBaseUrl}/documents/${documentId}`);
   }
-
 }

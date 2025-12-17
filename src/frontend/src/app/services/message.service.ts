@@ -30,11 +30,12 @@ export interface MessageResponse {
 })
 export class MessageService {
   private http = inject(HttpClient);
+  private apiUrl = `${environment.apiBaseUrl}/messages`;
 
   constructor() {}
 
   createMessage(request: CreateMessageRequest): Observable<MessageResponse> {
-    return this.http.post<MessageResponse>(`${environment.apiBaseUrl}/messages`, request);
+    return this.http.post<MessageResponse>(this.apiUrl, request);
   }
 
   getMessagesByProcess(
@@ -45,14 +46,20 @@ export class MessageService {
     let params = new HttpParams().set('page', page).set('limit', limit);
 
     return this.http.get<{ data: MessageResponse[]; meta: any }>(
-      `${environment.apiBaseUrl}/messages/process/${processId}`,
+      `${this.apiUrl}/process/${processId}`,
       { params }
     );
   }
 
   markMessagesAsRead(processId: string, recipientId: string): Observable<any> {
-    return this.http.put(`${environment.apiBaseUrl}/messages/process/${processId}/read`, {
+    return this.http.put(`${this.apiUrl}/process/${processId}/read`, {
       recipientId,
     });
+  }
+
+  getUnreadCount(userId: string): Observable<{ total: number; byProcess: any[] }> {
+    return this.http.get<{ total: number; byProcess: any[] }>(
+      `${this.apiUrl}/unread-count/${userId}`
+    );
   }
 }

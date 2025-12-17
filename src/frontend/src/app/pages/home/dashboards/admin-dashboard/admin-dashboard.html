@@ -1,0 +1,63 @@
+<div class="dashboard-container">
+  <div class="welcome-banner">
+    <h1>System Administration</h1>
+    <p>Logged in as {{ userName }}</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon-wrapper">
+        <i class="fa fa-users"></i>
+      </div>
+      <div>
+        <h3>Total Users</h3>
+        <p class="stat-value">{{ stats.total }}</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon-wrapper">
+        <i class="fa fa-user-check"></i>
+      </div>
+      <div>
+        <h3>Active Users</h3>
+        <p class="stat-value">{{ stats.active }}</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon-wrapper">
+        <i class="fa fa-heartbeat"></i>
+      </div>
+      <div>
+        <h3>System Status</h3>
+        <p class="stat-value" [style.color]="'#16a34a'">{{ stats.systemHealth }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <h2>Management Quick Links</h2>
+
+    <div class="loader-container" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="links-list" *ngIf="!loading">
+      <div class="link-card" [routerLink]="['/create-lawyer']">
+        <i class="fa fa-user-plus"></i>
+        <span>Add Lawyer</span>
+      </div>
+      <div class="link-card" [routerLink]="['/create-client']">
+        <i class="fa fa-user-plus"></i>
+        <span>Add Client</span>
+      </div>
+      <div class="link-card" [routerLink]="['/lawyers']">
+        <i class="fa fa-users"></i>
+        <span>Manage Lawyers</span>
+      </div>
+      <div class="link-card" [routerLink]="['/clients']">
+        <i class="fa fa-users"></i>
+        <span>Manage Clients</span>
+      </div>
+    </div>
+  </div>
+</div>
