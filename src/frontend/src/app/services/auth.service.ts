@@ -74,5 +74,23 @@ export class AuthService {
     return decoded ? decoded.user_id || null : null;
   }
 
+  getUserName(): string {
+    const token = this.getToken();
+    if (!token) return 'User';
 
+    const decoded = this.decodeToken(token);
+    return decoded
+      ? decoded.username || decoded.unique_name || decoded.name || decoded.sub || 'User'
+      : 'User';
+  }
+
+  getUserEmail(): string {
+    const token = this.getToken();
+    if (!token) return 'user@example.com';
+
+    const decoded = this.decodeToken(token);
+    return decoded
+      ? decoded.email || decoded.unique_name || 'user@example.com'
+      : 'user@example.com';
+  }
 }

@@ -103,7 +103,8 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy => 
         policy.WithOrigins(
-            "http://localhost:4200", 
+            "http://localhost:4200",
+            "http://localhost:8080",
             "https://consilium-web-staging.onrender.com", 
             "https://consilium-web-prod-ea6s.onrender.com")
         .AllowAnyMethod()
@@ -159,6 +160,7 @@ app.MapClientEndpoints();
 app.MapLawyerEndpoints();
 app.MapAdminEndpoints();
 app.MapProcessEndpoints();
+app.MapMessageEndpoints();
 app.MapDocumentEndpoints();
 app.MapLookupEndpoints();
 
@@ -172,6 +174,7 @@ void RegisterApplicationServices(IServiceCollection services)
     services.AddScoped<ILawyerRepository, LawyerRepository>();
     services.AddScoped<IAdminRepository, AdminRepository>();
     services.AddScoped<IProcessRepository, ProcessRepository>();
+    services.AddScoped<IMessageRepository, MessageRepository>();
     services.AddScoped<IPasswordHasher, PasswordHasher>();
     services.AddScoped<JwtTokenService>();
     services.AddEndpointsApiExplorer();

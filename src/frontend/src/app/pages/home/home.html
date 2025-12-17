@@ -1,4 +1,10 @@
-<section class="page">
-  <app-page-title title="Home"></app-page-title>
-  <p>Welcome to Consilium dashboard (placeholder).</p>
-</section>
+<div [ngSwitch]="role">
+  <app-client-dashboard *ngSwitchCase="'Client'"></app-client-dashboard>
+  <app-lawyer-dashboard *ngSwitchCase="'Lawyer'"></app-lawyer-dashboard>
+  <app-admin-dashboard *ngSwitchCase="'Admin'"></app-admin-dashboard>
+
+  <!-- Fallback -->
+  <div *ngSwitchDefault class="p-8 text-center text-gray-500">
+    <p>Loading dashboard...</p>
+  </div>
+</div>

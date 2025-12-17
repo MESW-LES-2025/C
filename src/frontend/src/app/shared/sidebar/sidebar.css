@@ -10,6 +10,8 @@
   box-sizing: border-box;
   position: sticky;
   top: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .brand {
@@ -102,6 +104,73 @@
   font-weight: 600;
 }
 
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #1f2937;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 4px;
+  flex: 1;
+}
+
+.logout-btn {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.u-name {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.u-email {
+  color: #9ca3af;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @media (max-width: 900px) {
   .sidebar {
     width: var(--sidebar-collapsed-width);
@@ -109,11 +178,18 @@
   }
   .user-name,
   .brand-logo,
-  .sidebar-nav .label {
+  .sidebar-nav .label,
+  .user-info {
     display: none;
   }
   .avatar {
     width: var(--avatar-size-mobile);
     height: var(--avatar-size-mobile);
+  }
+  .sidebar-footer {
+    padding-top: 10px;
+  }
+  .user-avatar {
+    margin: 0 auto;
   }
 }
