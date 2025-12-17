@@ -28,3 +28,7 @@ public record CreateMessageRequest(
 public record UpdateMessageLawyerRequest(
     [Required] Guid NewLawyerId
 );
+
+public record MarkAsReadRequest(
+    [Required] Guid RecipientId
+);

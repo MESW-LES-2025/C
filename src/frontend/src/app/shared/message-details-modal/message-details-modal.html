@@ -1,0 +1,49 @@
+<div class="msg-backdrop" role="dialog" aria-modal="true" (click)="onBackdropClick($event)">
+  <div class="msg-panel">
+    <div class="msg-header">
+      <h3 class="msg-title">Message Details</h3>
+      <button class="close-btn" (click)="onClose()" title="Close">
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
+
+    <div class="msg-body">
+      <div class="process-wrapper">
+        <span class="process-label">Process:</span>
+        <span class="process-text">{{ processName }}</span>
+      </div>
+      <div class="sender-info-row">
+        <div class="avatar-circle">
+          {{ getInitials(senderName) }}
+        </div>
+
+        <div class="sender-details">
+          <div class="sender-top-line">
+            <span class="sender-name">{{ senderName }}</span>
+            <i class="fa fa-chevron-right meta-separator"></i>
+            <span class="recipient-name">{{ recipientName }}</span>
+          </div>
+
+          <div class="sender-sub-line">
+            <span class="date-text">{{ date }}</span>
+          </div>
+        </div>
+
+        <div class="status-badge" *ngIf="isMine" [class.read]="!!readAt">
+          {{ readAt ? 'Read' : 'Unread' }}
+          <div class="tooltip" *ngIf="readAt">Read on {{ getFormattedDate(readAt) }}</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <h1 class="subject-line">{{ subject }}</h1>
+      <div class="message-content">
+        {{ body }}
+      </div>
+    </div>
+
+    <div class="msg-footer">
+      <button class="reply-btn" (click)="onReply()"><i class="fa fa-reply"></i> Reply</button>
+    </div>
+  </div>
+</div>
