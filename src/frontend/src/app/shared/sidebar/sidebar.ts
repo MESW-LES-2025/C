@@ -11,9 +11,26 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./sidebar.css'],
 })
 export class SidebarComponent {
-  constructor(private authService: AuthService) {}
+  userName: string = 'User';
+  userEmail: string = 'user@email.com';
+  userInitials: string = 'U';
+
+  constructor(private authService: AuthService) {
+    this.userName = this.authService.getUserName();
+    this.userEmail = this.authService.getUserEmail();
+    this.userInitials = this.getInitials(this.userName);
+  }
 
   hasRole(roles: string[]): boolean {
     return this.authService.hasRole(roles);
+  }
+
+  getInitials(name: string): string {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
   }
 }
