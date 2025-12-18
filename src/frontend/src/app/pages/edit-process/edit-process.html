@@ -148,32 +148,24 @@
               </select>
 
               <!-- PHASE -->
-              <div class="timeline-row phase-row">
+              <div *ngIf="filteredTypePhases.length > 0" class="timeline-row phase-row">
                 <span class="timeline-dot"></span>
 
                 <select
-                  name="processTypePhaseId"
-                  [(ngModel)]="model.processTypePhaseId"
-                  [disabled]="!model.processTypeId"
-                  required
+                    name="processTypePhaseId"
+                    [(ngModel)]="model.processTypePhaseId"
+                    [disabled]="!model.processTypeId"
+                    required
                 >
-                  <option value="">Select phase</option>
-                  <option
+                    <option value="">Select phase</option>
+                    <option
                     *ngFor="let p of filteredTypePhases"
                     [value]="p.id"
-                  >
+                    >
                     {{ p.processPhaseName }}
-                  </option>
+                    </option>
                 </select>
-              </div>
-
-              <!-- PHASE DESCRIPTION -->
-              <div
-                class="timeline-row phase-description"
-                *ngIf="processPhaseDescription"
-              >
-                {{ processPhaseDescription }}
-              </div>
+                </div>
 
             </div>
           </div>
