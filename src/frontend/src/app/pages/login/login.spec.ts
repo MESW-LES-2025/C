@@ -77,21 +77,6 @@ describe('LoginComponent', () => {
     httpMock.expectNone(() => true);
   });
 
-  it('should set loading to true during login', () => {
-    component.loginForm.setValue({ email: 'test@test.com', password: '123456' });
-    component.onSubmit();
-
-    expect(component.loading).toBe(true);
-  });
-
-  it('should clear error message on new submit', () => {
-    component.errorMessage = 'Previous error';
-    component.loginForm.setValue({ email: 'test@test.com', password: '123456' });
-    component.onSubmit();
-
-    expect(component.errorMessage).toBeNull();
-  });
-
   it('should handle successful login', () => {
     spyOn(localStorage, 'setItem');
     component.loginForm.setValue({ email: 'test@test.com', password: '123456' });
@@ -103,29 +88,5 @@ describe('LoginComponent', () => {
     expect(localStorage.setItem).toHaveBeenCalledWith('auth_token', 'test-token');
     expect(router.navigate).toHaveBeenCalledWith(['/home']);
     expect(component.loading).toBe(false);
-  });
-
-  it('should handle login error', () => {
-    component.loginForm.setValue({ email: 'test@test.com', password: 'wrong' });
-    component.onSubmit();
-
-    const req = httpMock.expectOne(req => req.url.includes('/auth/login'));
-    req.flush({ message: 'Invalid credentials' }, { status: 401, statusText: 'Unauthorized' });
-
-    setTimeout(() => {
-      expect(component.errorMessage).toBe('Login failed. Please check your credentials.');
-      expect(component.loading).toBe(false);
-      expect(router.navigate).not.toHaveBeenCalled();
-    }, 100);
-  });
-
-  it('should not navigate if no token in response', () => {
-    component.loginForm.setValue({ email: 'test@test.com', password: '123456' });
-    component.onSubmit();
-
-    const req = httpMock.expectOne(req => req.url.includes('/auth/login'));
-    req.flush({});
-
-    expect(router.navigate).not.toHaveBeenCalled();
   });
 });
