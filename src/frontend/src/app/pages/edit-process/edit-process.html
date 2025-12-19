@@ -114,62 +114,71 @@
           <!-- STATUS -->
           <h4 class="process-subtitle">Process Status</h4>
 
-          <select
-            class="status-select"
-            name="processStatusId"
-            [(ngModel)]="model.processStatusId"
-            required
-          >
-            <option *ngFor="let s of processStatuses" [value]="s.id">
-              {{ s.name }}
-            </option>
-          </select>
+          <div class="status-dropdown-wrapper">
+            <select
+                class="status-select"
+                name="processStatusId"
+                [(ngModel)]="model.processStatusId"
+                required
+            >
+                <option *ngFor="let s of processStatuses" [value]="s.id">
+                {{ s.name }}
+                </option>
+            </select>
+            <img class="dropdown-arrow" src="assets/down-arrow.png" alt="down-arrow" />
+           </div>
 
           <!-- TYPE & PHASE -->
           <h4 class="process-subtitle">Type & Phase</h4>
 
           <div class="process-type-phase">
-            <div class="timeline-rail"></div>
-
             <div class="timeline-rows">
 
-              <!-- TYPE -->
-              <select
-                class="timeline-row type-row"
-                name="processTypeId"
-                [(ngModel)]="model.processTypeId"
-                (change)="onProcessTypeChange()"
-                required
-              >
-                <option value="">Select type</option>
-                <option *ngFor="let t of processTypes" [value]="t.id">
-                  {{ t.name }}
-                </option>
-              </select>
-
-              <!-- PHASE -->
-              <div *ngIf="filteredTypePhases.length > 0" class="timeline-row phase-row">
-                <span class="timeline-dot"></span>
-
+                <!-- TYPE -->
+                <div class="type-dropdown-wrapper">
                 <select
+                    class="timeline-row type-row"
+                    name="processTypeId"
+                    [(ngModel)]="model.processTypeId"
+                    (change)="onProcessTypeChange()"
+                    required
+                >
+                    <option value="">Select type</option>
+                    <option *ngFor="let t of processTypes" [value]="t.id">
+                    {{ t.name }}
+                    </option>
+                </select>
+                <img class="dropdown-arrow" src="assets/down-arrow.png" alt="down-arrow" />
+                </div>
+
+                <!-- PHASE -->
+                <div *ngIf="filteredTypePhases.length > 0; else noPhasesTemplate" class="timeline-row phase-row">
+                <div class="phase-dropdown-wrapper">
+                    <select
                     name="processTypePhaseId"
                     [(ngModel)]="model.processTypePhaseId"
                     [disabled]="!model.processTypeId"
                     required
-                >
-                    <option value="">Select phase</option>
-                    <option
-                    *ngFor="let p of filteredTypePhases"
-                    [value]="p.id"
                     >
-                    {{ p.processPhaseName }}
+                    <option value="">Select phase</option>
+                    <option *ngFor="let p of filteredTypePhases" [value]="p.id">
+                        {{ p.processPhaseName }}
                     </option>
-                </select>
+                    </select>
+                    <img class="dropdown-arrow" src="assets/down-arrow.png" alt="down-arrow" />
+                </div>
                 </div>
 
-            </div>
-          </div>
+                <ng-template #noPhasesTemplate>
+                <div class="timeline-row phase-row">
+                    <div class="no-phases-message">
+                    No phases available for this type of process.
+                    </div>
+                </div>
+                </ng-template>
 
+            </div>
+            </div>
         </section>
       </main>
 
