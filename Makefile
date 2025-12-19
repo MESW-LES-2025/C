@@ -53,7 +53,6 @@ run-dev: build-dev up-dev
 	@echo "  Backend (with Swagger):  http://localhost:8080/healthz"
 	@echo "  Backend Swagger Docs:    http://localhost:8080/swagger/index.html"
 	@echo "  Frontend (hot reload):   http://localhost:4200"
-	#	@echo "  Qdrant Vector DB:        http://localhost:6333"
 	@echo "  Use 'make logs-dev' to see DEBUG logs"
 
 up-prod:
@@ -118,9 +117,6 @@ status:
 	@echo "=== Testing localhost:8080/weatherforecast (Backend API direct) ==="
 	@curl -s http://localhost:8080/weatherforecast | jq '.[0]' 2>/dev/null || echo "❌ Backend not responding"
 	@echo ""
-	@echo "=== Testing localhost:6333 (Qdrant) ==="
-	@curl -s http://localhost:6333/ | jq '.title' 2>/dev/null || echo "❌ Qdrant not responding"
-	@echo ""
 	@echo "✅ Status check complete"
 
 status-dev:
@@ -129,9 +125,6 @@ status-dev:
 	@echo ""
 	@echo "=== Testing localhost:8080/weatherforecast (Backend API) ==="
 	@curl -s http://localhost:8080/weatherforecast | jq '.[0]' 2>/dev/null || echo "❌ Backend not responding"
-	@echo ""
-	@echo "=== Testing localhost:6333 (Qdrant) ==="
-	@curl -s http://localhost:6333/ | jq '.title' 2>/dev/null || echo "❌ Qdrant not responding"
 	@echo ""
 	@echo "✅ Dev status check complete"
 

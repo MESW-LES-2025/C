@@ -1,4 +1,5 @@
 import { Component, inject, ChangeDetectorRef } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { PageTitleComponent } from '../../shared/page-title/page-title';
@@ -36,6 +37,7 @@ export class ProcessDetailsComponent {
   private messageService = inject(MessageService);
   private notificationService = inject(NotificationService);
   private auth = inject(AuthService);
+  private http = inject(HttpClient);
   private cdr = inject(ChangeDetectorRef);
 
   process: any = null;
@@ -104,7 +106,7 @@ export class ProcessDetailsComponent {
         try {
           const url = `/processes/${id}`;
           if (res?.name) this.breadcrumbService.setLabelOverride(url, res.name);
-        } catch (e) {}
+        } catch (e) { }
 
         if (res.clientId) {
           this.process.client = {
@@ -217,7 +219,7 @@ export class ProcessDetailsComponent {
       next: () => {
         this.loadProcess(this.process.id);
       },
-      error: () => {},
+      error: () => { },
     });
   }
 
@@ -236,7 +238,36 @@ export class ProcessDetailsComponent {
         this.documents.splice(i, 1);
         this.cdr.detectChanges();
       },
-      error: () => {},
+      error: () => { },
+    });
+  }
+
+  downloadDocument(doc: any) {
+    if (!doc.raw || !doc.raw.downloadUrl) {
+      this.notificationService.showError('Document download URL not available');
+      return;
+    }
+
+    // Create a full URL using the API base URL
+    const apiBaseUrl = 'http://localhost:8080';  // This should match your environment
+    const downloadUrl = `${apiBaseUrl}${doc.raw.downloadUrl}`;
+
+    // Use HttpClient to download with auth headers (via auth interceptor)
+    this.http.get(downloadUrl, { responseType: 'blob' }).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = doc.name || 'document';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Download failed', err);
+        this.notificationService.showError('Failed to download document');
+      }
     });
   }
 
@@ -270,11 +301,12 @@ export class ProcessDetailsComponent {
         this.cdr.detectChanges();
         setTimeout(() => this.scrollToBottom(), 100);
 
-        if (this.currentUserId) {
+        // Don't mark messages as read if user is Admin (admins only view, don't participate)
+        if (this.currentUserId && this.role !== 'Admin') {
           const userId = this.currentUserId;
           this.messageService.markMessagesAsRead(this.process.id, userId).subscribe({
-            next: () => {},
-            error: () => {},
+            next: () => { },
+            error: () => { },
           });
         }
       },
@@ -312,9 +344,13 @@ export class ProcessDetailsComponent {
   recipientNameForModal = '';
 
   canSendMessage(): boolean {
-    if (this.role === 'Client') return true;
+    // Admins cannot send messages - they can only view
+    if (this.role === 'Admin') return false;
+    // Lawyers can only reply to messages, not create new ones
     if (this.role === 'Lawyer') return false;
-    return true;
+    // Clients can create new messages
+    if (this.role === 'Client') return true;
+    return false;
   }
 
   openCreateMessageModal(prefillSubject: string = '', prefillBody: string = '') {

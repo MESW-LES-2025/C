@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { LawyerService } from '../../services/lawyer.service';
 import { ClientService } from '../../services/client.service';
+import { ProcessService } from '../../services/process.service';
 
 @Component({
   selector: 'app-processes',
@@ -19,9 +20,10 @@ export class ProcessesComponent {
   private router = inject(Router);
   private lawyerService = inject(LawyerService);
   private clientService = inject(ClientService);
+  private processService = inject(ProcessService);
   private auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
-  
+
   processes: any[] = [];
 
   currentPage = 1;
@@ -48,6 +50,10 @@ export class ProcessesComponent {
 
   isClient() {
     return this.role === 'Client';
+  }
+
+  isAdmin() {
+    return this.role === 'Admin';
   }
 
   loadProcesses(id: string, page: number, search: string = '') {
@@ -94,10 +100,10 @@ export class ProcessesComponent {
 
           this.processes.forEach((p) => {
             if (p.lawyerId) {
-                this.lawyerService.getLawyer(p.lawyerId).subscribe(lawyerRes => {
-                    p.lawyerName = lawyerRes?.name ?? 'Unknown Lawyer';
-                    this.cdr.detectChanges();
-                });
+              this.lawyerService.getLawyer(p.lawyerId).subscribe(lawyerRes => {
+                p.lawyerName = lawyerRes?.name ?? 'Unknown Lawyer';
+                this.cdr.detectChanges();
+              });
             }
           });
 
@@ -118,17 +124,38 @@ export class ProcessesComponent {
       return;
     }
 
-    this.lawyerService.getProcessesByLawyer(id, page, search).subscribe({
+    // Default: Admin or other roles - get all processes
+    this.processService.getProcesses({ page, search }).subscribe({
       next: (res) => {
         this.processes = [...(res.data ?? [])];
+
+        // Load client and lawyer names for each process
+        this.processes.forEach((p) => {
+          if (p.clientId) {
+            this.clientService.getClient(p.clientId).subscribe(clientRes => {
+              p.clientName = clientRes?.name ?? 'Unknown Client';
+              this.cdr.detectChanges();
+            });
+          }
+          if (p.lawyerId) {
+            this.lawyerService.getLawyer(p.lawyerId).subscribe(lawyerRes => {
+              p.lawyerName = lawyerRes?.name ?? 'Unknown Lawyer';
+              this.cdr.detectChanges();
+            });
+          }
+        });
+
         const totalCount = res.meta?.totalCount ?? 0;
         const limit = res.meta?.limit ?? 20;
         this.totalPages = Math.max(1, Math.ceil(totalCount / limit));
         this.totalProcesses = totalCount;
         this.currentPage = page;
+        this.loading = false;
         this.cdr.detectChanges();
       },
-      error: () => {}
+      error: () => {
+        this.loading = false;
+      }
     });
   }
 
@@ -136,10 +163,10 @@ export class ProcessesComponent {
     clearTimeout(this.searchTimeout);
 
     this.searchTimeout = setTimeout(() => {
-        const userId = this.auth.getUserId();
-        if (userId) {
+      const userId = this.auth.getUserId();
+      if (userId) {
         this.loadProcesses(userId, 1, this.searchTerm);
-        }
+      }
     }, 300);
   }
 
