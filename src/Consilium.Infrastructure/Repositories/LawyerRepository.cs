@@ -85,48 +85,28 @@ namespace Consilium.Infrastructure.Repositories
 
         public async Task<Lawyer> Create(User user, Lawyer lawyer)
         {
-            // This needs to be a transaction
             await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Set the Lawyer's ID to be the same as the User's ID
                 user.ID = Guid.NewGuid();
                 lawyer.ID = user.ID;
-
-                // Ensure IsActive is set (should default to true)
                 user.IsActive = true;
 
-                // Add the User first
                 _context.Users.Add(user);
-
-                // Add the Lawyer
                 _context.Lawyers.Add(lawyer);
 
-                // Log Creation
-                // Old Value is equal to New Value
-                JsonElement oldValue = WrapLawyerToLog(lawyer);
-                JsonElement newValue = oldValue;
-
-                UserLog log = await BuildLawyerLog(lawyer, user, "LAWYER_CREATED", oldValue, newValue);
-
-                await _context.UserLogs.AddAsync(log);
-
+                // Record log with the same values for old/new
+                JsonElement initialState = WrapLawyerToLog(lawyer);
+                await RecordLogAsync(lawyer, user, "LAWYER_CREATED", initialState);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // Reload the lawyer with related user and phones so caller gets populated data
-                var loaded = await _context.Lawyers
-                    .Include(l => l.User)
-                        .ThenInclude(u => u.Phones)
-                    .FirstOrDefaultAsync(l => l.ID == lawyer.ID);
-
-                return loaded ?? lawyer;
+                return await GetById(lawyer.ID) ?? lawyer;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
-                Console.WriteLine($"Error saving User/Lawyer to DB: {ex.GetType()}: {ex.Message}");
                 throw;
             }
         }
@@ -138,125 +118,154 @@ namespace Consilium.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<Lawyer?> UpdateLawyerAndUser(Guid lawyerId, Lawyer lawyerUpdates, User userUpdates, bool? isActive = null, Guid? editorId = null)
+
+        private async Task<User> GetEditorAsync(Guid? editorId)
         {
-
-            // Get the user who is performing the edit (if editorId is provided)
-            User? editor = null;
             if (!editorId.HasValue)
-            {
                 throw new ArgumentException("Editor ID must be provided for logging purposes");
-            }
-            else
-            {
-                editor = await _context.Users.FindAsync(editorId.Value);
-                if (editor == null)
-                {
-                    throw new KeyNotFoundException($"Editor user with ID {editorId.Value} not found");
-                }
-            }
+
+            // We use FirstOrDefaultAsync to be explicit.
+            // If your User model is very heavy, you could even use .Select() here,
+            // but for logging, the full entity is usually fine.
+            return await _context.Users.FirstOrDefaultAsync(u => u.ID == editorId.Value)
+                   ?? throw new KeyNotFoundException($"Editor user with ID {editorId.Value} not found");
+        }
 
 
-            // Get the existing lawyer with its user and phones
-            var existingLawyer = await _context.Lawyers
+        private async Task<(Lawyer? lawyer, JsonElement? oldValue)> GetExistingLawyerWithLogAsync(Guid lawyerId)
+        {
+            var lawyer = await _context.Lawyers
                 .Include(l => l.User)
                     .ThenInclude(u => u.Phones)
                 .FirstOrDefaultAsync(l => l.ID == lawyerId);
 
-            JsonElement oldValue;
-            if (existingLawyer == null)
+            if (lawyer == null)
             {
-                return null;
+                return (null, null);
+            }
+
+            return (lawyer, WrapLawyerToLog(lawyer));
+        }
+
+
+
+        private void ApplyUserUpdates(User existingUser, User updates, bool? isActive)
+        {
+            // Update basic user identity fields if provided
+            if (!string.IsNullOrWhiteSpace(updates.Name))
+                existingUser.Name = updates.Name;
+
+            if (!string.IsNullOrWhiteSpace(updates.Email))
+                existingUser.Email = updates.Email;
+
+            if (!string.IsNullOrWhiteSpace(updates.NIF))
+                existingUser.NIF = updates.NIF;
+
+            if (!string.IsNullOrWhiteSpace(updates.PasswordHash))
+                existingUser.PasswordHash = updates.PasswordHash;
+
+            // Update account status if a new value was explicitly passed
+            if (isActive.HasValue)
+                existingUser.IsActive = isActive.Value;
+        }
+
+
+
+
+
+        private void ApplyPhoneUpdates(User existingUser, ICollection<Phone> phoneUpdates)
+        {
+            // Skip if no phone updates were provided
+            if (phoneUpdates == null || !phoneUpdates.Any()) return;
+
+            var phoneUpd = phoneUpdates.First();
+            var existingMain = existingUser.Phones.FirstOrDefault(p => p.IsMain);
+
+            if (existingMain != null)
+            {
+                // Update existing main phone details
+                if (!string.IsNullOrWhiteSpace(phoneUpd.Number))
+                    existingMain.Number = phoneUpd.Number;
+
+                if (phoneUpd.CountryCode != 0)
+                    existingMain.CountryCode = phoneUpd.CountryCode;
+
+                existingMain.IsMain = phoneUpd.IsMain;
             }
             else
             {
-                // Pack old values
-                oldValue = WrapLawyerToLog(existingLawyer);
-            }
-
-            // Update User fields if provided
-            if (!string.IsNullOrWhiteSpace(userUpdates.Name))
-                existingLawyer.User.Name = userUpdates.Name;
-
-            if (!string.IsNullOrWhiteSpace(userUpdates.Email))
-                existingLawyer.User.Email = userUpdates.Email;
-
-            // Update NIF if provided
-            if (!string.IsNullOrWhiteSpace(userUpdates.NIF))
-                existingLawyer.User.NIF = userUpdates.NIF;
-
-            if (!string.IsNullOrWhiteSpace(userUpdates.PasswordHash))
-                existingLawyer.User.PasswordHash = userUpdates.PasswordHash;
-
-            // Update IsActive flag if provided
-            if (isActive.HasValue)
-                existingLawyer.User.IsActive = isActive.Value;
-
-            // Handle phone updates: if the caller provided Phone objects in userUpdates.Phones,
-            // we'll treat the first one as the 'main' phone and upsert it.
-            if (userUpdates.Phones != null && userUpdates.Phones.Any())
-            {
-                var phoneUpd = userUpdates.Phones.First();
-
-                // Try to find an existing main phone
-                var existingMain = existingLawyer.User.Phones.FirstOrDefault(p => p.IsMain == true);
-                if (existingMain != null)
+                // Create and attach a new phone record if none exists
+                var newPhone = new Phone
                 {
-                    // Update existing main phone
-                    if (!string.IsNullOrWhiteSpace(phoneUpd.Number))
-                        existingMain.Number = phoneUpd.Number;
-                    if (phoneUpd.CountryCode != 0)
-                        existingMain.CountryCode = phoneUpd.CountryCode;
-                    existingMain.IsMain = phoneUpd.IsMain;
-                }
-                else
-                {
-                    // Create a new phone record and attach to the user
-                    var newPhone = new Phone
-                    {
-                        ID = Guid.NewGuid(),
-                        UserID = existingLawyer.User.ID,
-                        Number = phoneUpd.Number ?? string.Empty,
-                        CountryCode = phoneUpd.CountryCode != 0 ? phoneUpd.CountryCode : (short)351,
-                        IsMain = phoneUpd.IsMain
-                    };
-                    existingLawyer.User.Phones.Add(newPhone);
-                    _context.Phones.Add(newPhone);
-                }
+                    ID = Guid.NewGuid(),
+                    UserID = existingUser.ID,
+                    Number = phoneUpd.Number ?? string.Empty,
+                    CountryCode = phoneUpd.CountryCode != 0 ? phoneUpd.CountryCode : (short)351,
+                    IsMain = phoneUpd.IsMain
+                };
+                existingUser.Phones.Add(newPhone);
+                _context.Phones.Add(newPhone);
             }
+        }
 
-            // Update Lawyer fields if provided
-            if (!string.IsNullOrWhiteSpace(lawyerUpdates.ProfessionalRegister))
-                existingLawyer.ProfessionalRegister = lawyerUpdates.ProfessionalRegister;
+
+        private void ApplyLawyerUpdates(Lawyer existingLawyer, Lawyer updates)
+        {
+            // Update lawyer-specific professional information
+            if (!string.IsNullOrWhiteSpace(updates.ProfessionalRegister))
+                existingLawyer.ProfessionalRegister = updates.ProfessionalRegister;
+        }
+
+
+        private async Task RecordLogAsync(Lawyer lawyer, User editor, string actionType, JsonElement oldValue)
+        {
+            // Capture current state as NewValue
+            JsonElement newValue = WrapLawyerToLog(lawyer);
+
+            // Build the log entry (centralizing the ActionLogType lookup)
+            UserLog log = await BuildLawyerLog(lawyer, editor, actionType, oldValue, newValue);
+
+            // Add it to the context tracking
+            _context.UserLogs.Add(log);
+        }
+
+
+
+
+        public async Task<Lawyer?> UpdateLawyerAndUser(Guid lawyerId, Lawyer lawyerUpdates, User userUpdates, bool? isActive = null, Guid? editorId = null)
+        {
+            // Get and validate the editor
+            User editor = await GetEditorAsync(editorId);
+
+
+            // Get the existing lawyer and prepare the log snapshot
+            var (existingLawyer, oldValue) = await GetExistingLawyerWithLogAsync(lawyerId);
+            if (existingLawyer == null) return null;
+
+            // Applying Entity Changes
+            ApplyUserUpdates(existingLawyer.User, userUpdates, isActive);
+            ApplyPhoneUpdates(existingLawyer.User, userUpdates.Phones);
+
+            // Applying Lawyer-specific Changes
+            ApplyLawyerUpdates(existingLawyer, lawyerUpdates);
 
 
             await using var transaction = await _context.Database.BeginTransactionAsync();
-            // Save changes to both User and Lawyer
             try
             {
                 _context.Lawyers.Update(existingLawyer);
                 _context.Users.Update(existingLawyer.User);
 
-                // Pack new values
-                JsonElement newValue = WrapLawyerToLog(existingLawyer);
-
-                UserLog log = await BuildLawyerLog(existingLawyer, editor, "LAWYER_UPDATED", oldValue, newValue);
-
-                // Add the log entry
-                _context.UserLogs.Add(log);
-
-
-
+                // Record log with the captured oldValue
+                await RecordLogAsync(existingLawyer, editor, "LAWYER_UPDATED", oldValue!.Value);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
                 return existingLawyer;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
-                Console.WriteLine($"Error updating Lawyer/User in DB: {ex.GetType()}: {ex.Message}");
                 throw;
             }
         }
