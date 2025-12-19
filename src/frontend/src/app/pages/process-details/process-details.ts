@@ -14,6 +14,7 @@ import {
 } from '../../shared/create-message-modal/create-message-modal';
 import { MessageDetailsModalComponent } from '../../shared/message-details-modal/message-details-modal';
 import { NotificationService } from '../../shared/notification/notification.service';
+import { ButtonComponent } from '../../shared/button/button';
 
 @Component({
   selector: 'app-process-details',
@@ -22,7 +23,7 @@ import { NotificationService } from '../../shared/notification/notification.serv
   styleUrls: ['./process-details.css'],
   imports: [
     CommonModule,
-    PageTitleComponent,
+    PageTitleComponent, ButtonComponent,
     CreateMessageModalComponent,
     MessageDetailsModalComponent,
   ],
@@ -46,6 +47,8 @@ export class ProcessDetailsComponent {
   processStatusName: string = '';
   processTypeName: string = '';
   processPhaseName: string = '';
+  processPhases: any[] = [];
+  processPhaseDescription: string = '';
 
   title = 'Process Details';
   private breadcrumbService = inject(BreadcrumbService);
@@ -57,6 +60,7 @@ export class ProcessDetailsComponent {
       this.loadProcess(processId);
     }
     this.loadProcessStatus();
+    this.loadProcessPhases();
   }
 
   loadProcess(id: string) {
@@ -131,6 +135,13 @@ export class ProcessDetailsComponent {
     });
   }
 
+  loadProcessPhases() {
+    this.processService.getProcessPhases().subscribe(phases => {
+      this.processPhases = phases.filter(p => p.isActive);
+      this.resolvePhaseDescription();
+    });
+  }
+
   getStatusClass(status: string): string {
     if (!status) return '';
 
@@ -152,13 +163,26 @@ export class ProcessDetailsComponent {
       if (match) {
         this.processTypeName = match.processTypeName;
         this.processPhaseName = match.processPhaseName;
+
+        this.resolvePhaseDescription(match.processPhaseId);
       } else {
         this.processTypeName = '—';
         this.processPhaseName = '—';
+        this.processPhaseDescription = '';
       }
 
       this.cdr.detectChanges();
     });
+  }
+
+  resolvePhaseDescription(phaseId?: number) {
+    if (!phaseId || !this.processPhases.length) {
+      this.processPhaseDescription = '';
+      return;
+    }
+
+    const phase = this.processPhases.find(p => p.id === phaseId);
+    this.processPhaseDescription = phase?.description ?? '';
   }
 
   getInitials(name?: string | null): string {

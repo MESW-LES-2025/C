@@ -1,0 +1,282 @@
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.process-grid {
+  margin-top: 24px;
+}
+
+
+.process-main {
+  display: flex;
+}
+
+.process-info {
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 24px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.process-title-input {
+  font-size: 20px;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  padding: 4px 0;
+  margin-bottom: 12px;
+}
+
+.process-title-input::placeholder {
+  color: #9ca3af;
+}
+
+.process-title-input:focus {
+  border-bottom: 2px solid #111827;
+}
+
+.process-description-input {
+  font-size: 15px;
+  line-height: 1.55;
+  color: #444;
+  border-radius: 12px;
+  border: 1.5px solid #f1f5f9;
+  padding: 12px;
+  resize: vertical;
+  margin-bottom: 24px;
+}
+
+
+.attachments-section {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.attachments-list-wrapper {
+  flex: 1;
+  max-height: 230px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.attachments-list-wrapper::-webkit-scrollbar {
+  width: 4px;
+}
+
+.attachments-list-wrapper::-webkit-scrollbar-thumb {
+  background: #737373;
+  border-radius: 999px;
+}
+
+.empty-documents {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: #fafafa;
+  border: 1px solid #f3f4f6;
+  margin-bottom: 8px;
+}
+
+.attachment-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.attachment-icon img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+.attachment-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.attachment-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.attachment-meta {
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  gap: 16px;
+}
+
+.attachment-delete {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.6;
+}
+
+.attachment-delete:hover {
+  opacity: 1;
+}
+
+
+.attachments-upload {
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.upload-box {
+  min-height: 110px;
+  border-radius: 20px;
+  border: 2px dashed #f1f1f1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px;
+  font-size: 13px;
+  background-color: #fbfbfb;
+  gap: 8px;
+}
+
+.upload-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.upload-text {
+  color: #737373;
+}
+
+.upload-browse {
+  border: none;
+  background: none;
+  color: #111827;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.status-dropdown-wrapper {
+  position: relative;
+  width: fit-content;
+  display: inline-block; 
+}
+
+.status-select {
+  appearance: none;
+  background-color: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  
+  width: 150px; 
+  padding: 12px 36px 12px 16px;
+  
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.dropdown-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px; 
+  height: auto;
+  pointer-events: none;
+}
+
+.type-dropdown-wrapper,
+.phase-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+  width: fit-content;
+}
+
+.process-type-phase select {
+  appearance: none;
+  background-color: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  width: 100%;
+  padding: 12px 36px 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.process-type-phase select:focus {
+  outline: none;
+}
+
+.type-dropdown-wrapper .dropdown-arrow,
+.phase-dropdown-wrapper .dropdown-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: auto;
+  pointer-events: none;
+}
+
+.timeline-rail,
+.timeline-dot {
+  display: none;
+}
+
+.timeline-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-row {
+  font-size: 15px;
+  color: #111827;
+}
+
+.type-row {
+  color: #6b7280;
+}
+
+.phase-row {
+  position: relative;
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.no-phases-message {
+  position: relative;
+  font-weight: 600;
+  font-size: 17px;
+}

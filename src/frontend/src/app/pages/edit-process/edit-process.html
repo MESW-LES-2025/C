@@ -1,0 +1,188 @@
+<section class="page process-details">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <app-page-title [title]="'Edit Process'"></app-page-title>
+
+    <div class="page-actions">
+      <app-button
+        label="Cancel"
+        variant="secondary"
+        (click)="onCancelClick()"
+      ></app-button>
+
+      <app-button
+        label="Save Changes"
+        icon="fa-save"
+        variant="primary"
+        [disabled]="!isComplete() || submitting"
+        (click)="updateProcess()"
+      ></app-button>
+    </div>
+  </div>
+
+  <!-- FORM IS CRITICAL -->
+  <form #f="ngForm" novalidate>
+
+    <div class="process-grid">
+
+      <main class="process-main">
+        <section class="process-info">
+
+          <!-- PROCESS NAME -->
+          <input
+            class="process-title-input"
+            name="name"
+            [(ngModel)]="model.name"
+            placeholder="Process name"
+            required
+          />
+
+          <!-- DESCRIPTION -->
+          <textarea
+            class="process-description-input"
+            name="description"
+            rows="3"
+            [(ngModel)]="model.description"
+            placeholder="Describe the process"
+          ></textarea>
+
+          <!-- ATTACHMENTS -->
+          <h4 class="process-subtitle">Attached Documents</h4>
+
+          <div class="attachments-section">
+
+            <div class="attachments-list-wrapper">
+              <div class="attachments-list">
+                <div *ngIf="documents.length === 0" class="empty-documents">
+                  No documents uploaded yet.
+                </div>
+
+                <article
+                  class="attachment-item"
+                  *ngFor="let doc of documents; let i = index"
+                >
+                  <div class="attachment-icon">
+                    <img [src]="getDocumentIcon(doc.name)" />
+                  </div>
+
+                  <div class="attachment-info">
+                    <div class="attachment-name">{{ doc.name }}</div>
+                    <div class="attachment-meta">
+                      <span>Size: {{ doc.size }}</span>
+                      <span>Uploaded: {{ doc.uploaded }}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="attachment-delete"
+                    (click)="removeDocument(i)"
+                  >
+                    🗑
+                  </button>
+                </article>
+              </div>
+            </div>
+
+            <div class="attachments-upload">
+              <div class="upload-box">
+                <img class="upload-icon" src="assets/upload_logo.png" />
+                <div class="upload-text">
+                  Browse files to upload<br />
+                  <button
+                    type="button"
+                    class="upload-browse"
+                    (click)="fileInput.click()"
+                  >
+                    Browse
+                  </button>
+                </div>
+
+                <input
+                  type="file"
+                  #fileInput
+                  multiple
+                  (change)="onFileSelected($event)"
+                  hidden
+                />
+              </div>
+            </div>
+
+          </div>
+
+          <!-- STATUS -->
+          <h4 class="process-subtitle">Process Status</h4>
+
+          <div class="status-dropdown-wrapper">
+            <select
+                class="status-select"
+                name="processStatusId"
+                [(ngModel)]="model.processStatusId"
+                required
+            >
+                <option *ngFor="let s of processStatuses" [value]="s.id">
+                {{ s.name }}
+                </option>
+            </select>
+            <img class="dropdown-arrow" src="assets/down-arrow.png" alt="down-arrow" />
+           </div>
+
+          <!-- TYPE & PHASE -->
+          <h4 class="process-subtitle">Type & Phase</h4>
+
+          <div class="process-type-phase">
+            <div class="timeline-rows">
+
+                <!-- TYPE -->
+                <div class="type-dropdown-wrapper">
+                <select
+                    class="timeline-row type-row"
+                    name="processTypeId"
+                    [(ngModel)]="model.processTypeId"
+                    (change)="onProcessTypeChange()"
+                    required
+                >
+                    <option value="">Select type</option>
+                    <option *ngFor="let t of processTypes" [value]="t.id">
+                    {{ t.name }}
+                    </option>
+                </select>
+                <img class="dropdown-arrow" src="assets/down-arrow.png" alt="down-arrow" />
+                </div>
+
+                <!-- PHASE -->
+                <div *ngIf="filteredTypePhases.length > 0; else noPhasesTemplate" class="timeline-row phase-row">
+                <div class="phase-dropdown-wrapper">
+                    <select
+                    name="processTypePhaseId"
+                    [(ngModel)]="model.processTypePhaseId"
+                    [disabled]="!model.processTypeId"
+                    required
+                    >
+                    <option value="">Select phase</option>
+                    <option *ngFor="let p of filteredTypePhases" [value]="p.id">
+                        {{ p.processPhaseName }}
+                    </option>
+                    </select>
+                    <img class="dropdown-arrow" src="assets/down-arrow.png" alt="down-arrow" />
+                </div>
+                </div>
+
+                <ng-template #noPhasesTemplate>
+                <div class="timeline-row phase-row">
+                    <div class="no-phases-message">
+                    No phases available for this type of process.
+                    </div>
+                </div>
+                </ng-template>
+
+            </div>
+            </div>
+        </section>
+      </main>
+
+    </div>
+
+  </form>
+</section>

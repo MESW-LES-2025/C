@@ -1,6 +1,14 @@
 <section class="page process-details">
   <div class="page-header">
     <app-page-title [title]="'Process Details'"></app-page-title>
+    <div class="page-actions" *ngIf="role === 'Lawyer' || role === 'Admin'">
+      <app-button
+        label="Edit Process"
+        icon="fa-pen"
+        [link]="['/processes', process?.id, 'edit']"
+        variant="primary"
+      ></app-button>
+    </div>
   </div>
 
   <div class="process-grid">
@@ -12,57 +20,64 @@
           {{ process?.description || 'No description provided.' }}
         </p>
 
-        <h4 class="process-subtitle">Attached Documents</h4>
-        <div class="attachments-section">
-          <div class="attachments-list-wrapper">
-            <div class="attachments-list">
-              <div *ngIf="documents.length === 0" class="empty-documents">
-                No documents uploaded yet.
-              </div>
+            <h4 class="process-subtitle">Attached Documents</h4>
+            <div class="attachments-section">
 
-              <article class="attachment-item" *ngFor="let doc of documents; let i = index">
-                <div class="attachment-icon">
-                  <img [src]="getDocumentIcon(doc.name)" alt="file icon" />
-                </div>
-
-                <div class="attachment-info">
-                  <div class="attachment-name">{{ doc.name }}</div>
-                  <div class="attachment-meta">
-                    <span>Size: {{ doc.size }}</span>
-                    <span>Uploaded: {{ doc.uploaded }}</span>
+              <div class="attachments-list-wrapper">
+                <div class="attachments-list">
+                  <div *ngIf="documents.length === 0" class="empty-documents">
+                    No documents uploaded yet.
                   </div>
+
+                  <article
+                    class="attachment-item"
+                    *ngFor="let doc of documents; let i = index"
+                  >
+                    <div class="attachment-icon">
+                      <img [src]="getDocumentIcon(doc.name)" alt="file icon" />
+                    </div>
+
+                    <div class="attachment-info">
+                      <div class="attachment-name">{{ doc.name }}</div>
+                      <div class="attachment-meta">
+                        <span>Size: {{ doc.size }}</span>
+                        <span>Uploaded: {{ doc.uploaded }}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      *ngIf="role === 'Lawyer' || role === 'Admin'"
+                      type="button"
+                      class="attachment-delete"
+                      (click)="removeDocument(i); $event.stopPropagation()"
+                    >
+                      🗑
+                    </button>
+                  </article>
                 </div>
-
-                <button
-                  type="button"
-                  class="attachment-delete"
-                  (click)="removeDocument(i); $event.stopPropagation()"
-                >
-                  🗑
-                </button>
-              </article>
-            </div>
-          </div>
-
-          <div class="attachments-upload">
-            <div class="upload-box">
-              <img class="upload-icon" src="assets/upload_logo.png" alt="Upload" />
-              <div class="upload-text">
-                Browse files to upload<br />
-                <button type="button" class="upload-browse" (click)="fileInput.click()">
-                  Browse
-                </button>
               </div>
-              <input
-                type="file"
-                #fileInput
-                (change)="onFileSelected($event)"
-                multiple
-                style="display: none"
-              />
+
+              <div class="attachments-upload" *ngIf="role === 'Lawyer' || role === 'Admin'">
+                <div class="upload-box">
+                  <img class="upload-icon" src="assets/upload_logo.png" alt="Upload">
+                  <div class="upload-text">
+                    Browse files to upload<br />
+                    <button type="button" class="upload-browse" (click)="fileInput.click()">
+                      Browse
+                    </button>
+                  </div>
+                  <input 
+                    type="file" 
+                    #fileInput 
+                    (change)="onFileSelected($event)" 
+                    multiple 
+                    style="display: none"
+                  />
+                </div>
+              </div>
+
             </div>
-          </div>
-        </div>
+
 
         <h4 class="process-subtitle">Process Status</h4>
         <div class="status-badge" [ngClass]="getStatusClass(processStatusName)">
@@ -70,9 +85,31 @@
           <span class="status-text">{{ processStatusName }}</span>
         </div>
 
-        <h4 class="process-subtitle">Type & Phase</h4>
-        <p>{{ processTypeName }} – {{ processPhaseName }}</p>
-      </section>
+            <h4 class="process-subtitle">Type & Phase</h4>
+            <div class="process-type-phase">
+              <div class="timeline-rail"></div>
+
+              <div class="timeline-rows">
+                <div class="timeline-row type-row">
+                  {{ processTypeName }}
+                </div>
+
+                <div class="timeline-row phase-row">
+                  <span class="timeline-dot"></span>
+                  {{ processPhaseName }}
+                </div>
+
+                <div
+                  class="timeline-row phase-description"
+                  *ngIf="processPhaseDescription"
+                >
+                  {{ processPhaseDescription }}
+                </div>
+              </div>
+            </div>
+
+        </section>
+
     </main>
 
     <aside class="process-side">
