@@ -81,23 +81,12 @@ public static class LawyerEndpoints
         var lawyer = await repo.GetById(id);
 
         if (lawyer is null)
+        {
             return Results.NotFound(new { message = $"Lawyer with ID {id} not found" });
+        }
 
-        var mainPhone = lawyer.User?.Phones?.FirstOrDefault(p => p.IsMain == true);
-        var phoneStr = mainPhone != null ? mainPhone.Number : string.Empty;
-
-        var response = new LawyerResponse(
-            Id: lawyer.ID,
-            Email: lawyer.User?.Email ?? string.Empty,
-            Name: lawyer.User?.Name ?? string.Empty,
-            Status: lawyer.User?.IsActive == true ? UserStatus.ACTIVE : UserStatus.INACTIVE,
-            NIF: lawyer.User?.NIF ?? string.Empty,
-            ProfessionalRegister: lawyer.ProfessionalRegister,
-            Phone: phoneStr,
-            PhoneCountryCode: mainPhone != null ? mainPhone.CountryCode : (short?)null
-        );
-
-        return Results.Ok(response);
+        // Using the existing private mapping method to standardize the response
+        return Results.Ok(MapToLawyerResponse(lawyer));
     }
 
     private static async Task<IResult> CreateLawyer(
