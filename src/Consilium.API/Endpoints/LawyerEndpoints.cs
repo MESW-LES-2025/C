@@ -3,6 +3,7 @@ using Consilium.Domain.Models;
 using Consilium.Domain.Enums;
 using Consilium.API.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Consilium.API.Endpoints;
 
@@ -47,7 +48,8 @@ public static class LawyerEndpoints
     {
         var (lawyers, totalCount) = await repo.GetAll(search, status, page, limit, sortBy, sortOrder);
 
-        var response = lawyers.Select(l => {
+        var response = lawyers.Select(l =>
+        {
             var mainPhone = l.User?.Phones?.FirstOrDefault(p => p.IsMain == true);
             var phoneStr = mainPhone != null ? mainPhone.Number : string.Empty;
             return new LawyerResponse(
@@ -62,9 +64,11 @@ public static class LawyerEndpoints
             );
         });
 
-        return Results.Ok(new {
+        return Results.Ok(new
+        {
             data = response,
-            meta = new {
+            meta = new
+            {
                 totalCount,
                 page,
                 limit
@@ -75,7 +79,7 @@ public static class LawyerEndpoints
     private static async Task<IResult> GetLawyerById(Guid id, ILawyerRepository repo)
     {
         var lawyer = await repo.GetById(id);
-        
+
         if (lawyer is null)
             return Results.NotFound(new { message = $"Lawyer with ID {id} not found" });
 
@@ -188,12 +192,50 @@ public static class LawyerEndpoints
         Guid id,
         UpdateLawyerRequest request,
         ILawyerRepository repo,
-        IPasswordHasher hasher)
+        IPasswordHasher hasher,
+        ClaimsPrincipal userClaims)
     {
+
+        // Início da correção
+
+        // 1. Extrai o ID do usuário do Token (usando o parâmetro userClaims)
+        var userIdClaim = userClaims?.FindFirst("user_id")?.Value;
+        Guid? editorId = null;
+
+        if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var parsedGuid))
+        {
+            editorId = parsedGuid;
+        }
+
+        // 2. Validação: Se não houver usuário logado, impedimos a edição
+        if (editorId == null)
+        {
+            return Results.BadRequest(new { message = "Operação abortada: Usuário não autenticado ou Token inválido." });
+        }
+        else
+        {
+            var loggedUserFromDB = await repo.GetById(editorId ?? Guid.Empty);
+
+            if (loggedUserFromDB == null)
+            {
+                return Results.NotFound(new { message = $"Advogado com ID {id} não encontrado." });
+            }
+
+
+        }
+
+        // Término da correção
+
+
+
+
+
+
+
         // Validate input - at least one field should be provided
-        if (string.IsNullOrWhiteSpace(request.Name) && 
-            string.IsNullOrWhiteSpace(request.Email) && 
-            string.IsNullOrWhiteSpace(request.Password) && 
+        if (string.IsNullOrWhiteSpace(request.Name) &&
+            string.IsNullOrWhiteSpace(request.Email) &&
+            string.IsNullOrWhiteSpace(request.Password) &&
             string.IsNullOrWhiteSpace(request.ProfessionalRegister) &&
             string.IsNullOrWhiteSpace(request.NIF) &&
             string.IsNullOrWhiteSpace(request.PhoneNumber) &&
@@ -234,26 +276,26 @@ public static class LawyerEndpoints
             ProfessionalRegister = request.ProfessionalRegister ?? string.Empty
         };
 
-    // Capture existing state for before snapshot
-    var existingLawyer = await repo.GetById(id);
-    if (existingLawyer == null)
-        return Results.NotFound(new { message = $"Lawyer with ID {id} not found" });
-    // Build old snapshot BEFORE update
-    var oldSnapshot = System.Text.Json.JsonSerializer.SerializeToElement(new
-    {
-        LawyerID = existingLawyer.ID,
-        UserID = existingLawyer.User?.ID,
-        UserName = existingLawyer.User?.Name,
-        UserEmail = existingLawyer.User?.Email,
-        UserNIF = existingLawyer.User?.NIF,
-        UserPassword = "***REDACTED***",
-        UserIsActive = existingLawyer.User?.IsActive,
-        LawyerProfessionalRegister = existingLawyer.ProfessionalRegister,
-        Phones = existingLawyer.User?.Phones?.Select(p => new { p.ID, p.Number, p.CountryCode, p.IsMain })
-    });
+        // Capture existing state for before snapshot
+        var existingLawyer = await repo.GetById(id);
+        if (existingLawyer == null)
+            return Results.NotFound(new { message = $"Lawyer with ID {id} not found" });
+        // Build old snapshot BEFORE update
+        var oldSnapshot = System.Text.Json.JsonSerializer.SerializeToElement(new
+        {
+            LawyerID = existingLawyer.ID,
+            UserID = existingLawyer.User?.ID,
+            UserName = existingLawyer.User?.Name,
+            UserEmail = existingLawyer.User?.Email,
+            UserNIF = existingLawyer.User?.NIF,
+            UserPassword = "***REDACTED***",
+            UserIsActive = existingLawyer.User?.IsActive,
+            LawyerProfessionalRegister = existingLawyer.ProfessionalRegister,
+            Phones = existingLawyer.User?.Phones?.Select(p => new { p.ID, p.Number, p.CountryCode, p.IsMain })
+        });
 
-    // Update in the repository (pass through optional IsActive flag)
-    var updatedLawyer = await repo.UpdateLawyerAndUser(id, lawyerUpdates, userUpdates, request.IsActive);
+        // Update in the repository (pass through optional IsActive flag)
+        var updatedLawyer = await repo.UpdateLawyerAndUser(id, lawyerUpdates, userUpdates, request.IsActive, editorId ?? Guid.Empty);
 
         if (updatedLawyer == null)
             return Results.NotFound(new { message = $"Lawyer with ID {id} not found" });

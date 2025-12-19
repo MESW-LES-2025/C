@@ -14,33 +14,35 @@ public class AuditLogFacade
         _context = context;
     }
 
-    private async Task<ActionLogType> GetOrCreateActionTypeAsync(string name)
+    private async Task<ActionLogType> GetActionTypeAsync(string name)
     {
-        var e = await _context.ActionLogTypes
+        // Query only, no insertion attempt
+        var actionType = await _context.ActionLogTypes
             .FirstOrDefaultAsync(a => a.Name == name);
 
-        if (e != null)
-            return e;
+        if (actionType == null)
+        {
+            // Since this is a domain table, this error helps identify
+            // if the required SQL INSERTs were not executed in the database.
+            throw new InvalidOperationException($"Action type '{name}' not found in database.");
+        }
 
-        var newType = new ActionLogType { ID = Guid.NewGuid(), Name = name };
-        _context.ActionLogTypes.Add(newType);
-        await _context.SaveChangesAsync();
-        return newType;
+        return actionType;
     }
 
     private async Task LogUserActionAsync(Guid? affectedUserId, Guid? updatedByUserId, string actionTypeName, JsonElement? oldValue, JsonElement? newValue)
     {
-        var actionLogType = await GetOrCreateActionTypeAsync(actionTypeName);
+        // Fetch the action type from the domain table
+        ActionLogType actionLogType = await GetActionTypeAsync(actionTypeName);
 
         var userLog = new UserLog
         {
             ID = Guid.NewGuid(),
             AffectedUserID = affectedUserId,
             UpdatedByID = updatedByUserId,
-            ActionLogTypeID = actionLogType.ID,
+            ActionLogTypeID = actionLogType.ID, // Uses the integer ID from the database
             OldValue = oldValue,
-            NewValue = newValue,
-            UpdatedAt = DateTime.UtcNow
+            NewValue = newValue
         };
 
         _context.UserLogs.Add(userLog);

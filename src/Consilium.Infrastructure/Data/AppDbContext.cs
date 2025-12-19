@@ -103,7 +103,7 @@ namespace Consilium.Infrastructure.Data
             modelBuilder.Entity<Process>()
                 .Property(p => p.CreatedAt)
                 .ValueGeneratedOnAdd();
-            
+
             modelBuilder.Entity<Process>()
                 .Property(p => p.CreatedAt)
                 .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
@@ -111,7 +111,7 @@ namespace Consilium.Infrastructure.Data
             // Configure Message entity
             modelBuilder.Entity<Message>()
                 .HasKey(m => m.Id);
-            
+
             modelBuilder.Entity<Message>()
                 .Property(m => m.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -133,6 +133,45 @@ namespace Consilium.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(m => m.RecipientId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            // --- Configurações de Auditoria ---∏
+
+            // 1. Configurar ActionLogType (Chave Primária int)
+            modelBuilder.Entity<ActionLogType>()
+                .HasKey(alt => alt.ID);
+
+            // 2. Configurar UserLog (Snapshot JSON e Relacionamentos)
+            modelBuilder.Entity<UserLog>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+
+                // Instruir o EF a tratar como jsonb no PostgreSQL
+                entity.Property(e => e.OldValue)
+                    .HasColumnType("jsonb");
+
+                entity.Property(e => e.NewValue)
+                    .HasColumnType("jsonb");
+
+                // Configurar a relação: Um Log tem um Tipo de Ação, um Tipo de Ação tem muitos Logs
+                entity.HasOne(e => e.ActionLogType)
+                    .WithMany(alt => alt.UserLogs)
+                    .HasForeignKey(e => e.ActionLogTypeID)
+                    .OnDelete(DeleteBehavior.Restrict); // Evita deletar o tipo se houver logs
+            });
         }
     }
 }

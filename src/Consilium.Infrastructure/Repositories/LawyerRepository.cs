@@ -1,7 +1,11 @@
+using System.Text.Json;
 using Consilium.Application.Interfaces;
 using Consilium.Domain.Models;
 using Consilium.Infrastructure.Data;
+using Consilium.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
+
+
 
 namespace Consilium.Infrastructure.Repositories
 {
@@ -88,15 +92,25 @@ namespace Consilium.Infrastructure.Repositories
                 // Set the Lawyer's ID to be the same as the User's ID
                 user.ID = Guid.NewGuid();
                 lawyer.ID = user.ID;
-                
+
                 // Ensure IsActive is set (should default to true)
                 user.IsActive = true;
 
                 // Add the User first
                 _context.Users.Add(user);
-                
+
                 // Add the Lawyer
                 _context.Lawyers.Add(lawyer);
+
+                // Log Creation
+                // Old Value is equal to New Value
+                JsonElement oldValue = WrapLawyerToLog(lawyer);
+                JsonElement newValue = oldValue;
+
+                UserLog log = await BuildLawyerLog(lawyer, user, "LAWYER_CREATED", oldValue, newValue);
+
+                await _context.UserLogs.AddAsync(log);
+
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -124,16 +138,41 @@ namespace Consilium.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-    public async Task<Lawyer?> UpdateLawyerAndUser(Guid lawyerId, Lawyer lawyerUpdates, User userUpdates, bool? isActive = null)
+        public async Task<Lawyer?> UpdateLawyerAndUser(Guid lawyerId, Lawyer lawyerUpdates, User userUpdates, bool? isActive = null, Guid? editorId = null)
         {
+
+            // Get the user who is performing the edit (if editorId is provided)
+            User? editor = null;
+            if (!editorId.HasValue)
+            {
+                throw new ArgumentException("Editor ID must be provided for logging purposes");
+            }
+            else
+            {
+                editor = await _context.Users.FindAsync(editorId.Value);
+                if (editor == null)
+                {
+                    throw new KeyNotFoundException($"Editor user with ID {editorId.Value} not found");
+                }
+            }
+
+
             // Get the existing lawyer with its user and phones
             var existingLawyer = await _context.Lawyers
                 .Include(l => l.User)
                     .ThenInclude(u => u.Phones)
                 .FirstOrDefaultAsync(l => l.ID == lawyerId);
 
+            JsonElement oldValue;
             if (existingLawyer == null)
+            {
                 return null;
+            }
+            else
+            {
+                // Pack old values
+                oldValue = WrapLawyerToLog(existingLawyer);
+            }
 
             // Update User fields if provided
             if (!string.IsNullOrWhiteSpace(userUpdates.Name))
@@ -190,11 +229,36 @@ namespace Consilium.Infrastructure.Repositories
             if (!string.IsNullOrWhiteSpace(lawyerUpdates.ProfessionalRegister))
                 existingLawyer.ProfessionalRegister = lawyerUpdates.ProfessionalRegister;
 
-            _context.Lawyers.Update(existingLawyer);
-            _context.Users.Update(existingLawyer.User);
-            await _context.SaveChangesAsync();
 
-            return existingLawyer;
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            // Save changes to both User and Lawyer
+            try
+            {
+                _context.Lawyers.Update(existingLawyer);
+                _context.Users.Update(existingLawyer.User);
+
+                // Pack new values
+                JsonElement newValue = WrapLawyerToLog(existingLawyer);
+
+                UserLog log = await BuildLawyerLog(existingLawyer, editor, "LAWYER_UPDATED", oldValue, newValue);
+
+                // Add the log entry
+                _context.UserLogs.Add(log);
+
+
+
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return existingLawyer;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine($"Error updating Lawyer/User in DB: {ex.GetType()}: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task Delete(Guid id)
@@ -204,7 +268,7 @@ namespace Consilium.Infrastructure.Repositories
                 .Include(l => l.User)
                 .ThenInclude(u => u.Phones)
                 .FirstOrDefaultAsync(l => l.ID == id);
-            
+
             if (lawyer == null)
                 throw new KeyNotFoundException($"Lawyer with ID {id} not found");
 
@@ -216,20 +280,74 @@ namespace Consilium.Infrastructure.Repositories
 
             if (hasActiveCases)
                 throw new InvalidOperationException("Lawyer has active/open cases and cannot be deleted");
-            
+
             // Delete in proper order: Phones -> Lawyer -> User
             if (lawyer.User?.Phones != null)
             {
                 foreach (var phone in lawyer.User.Phones)
                     _context.Phones.Remove(phone);
             }
-            
+
             _context.Lawyers.Remove(lawyer);
-            
+
             if (lawyer.User != null)
                 _context.Users.Remove(lawyer.User);
-            
+
             await _context.SaveChangesAsync();
+        }
+
+        private JsonElement WrapLawyerToLog(Lawyer lawyer)
+        {
+            // A flat structure that combines data from both tables
+            var WrapedLawer = new
+            {
+                user_type = "lawyer",
+                // table user_log
+                user_id = lawyer.User?.ID,
+                user_name = lawyer.User?.Name,
+                user_nif = lawyer.User?.NIF,
+                user_email = lawyer.User?.Email,
+                user_is_active = lawyer.User?.IsActive,
+                // table lawyer
+                lawyer_id = lawyer.ID,
+                lawyer_professional_register = lawyer.ProfessionalRegister,
+                // table phone - taking the first one marked as IsMain or just the first in the list
+                user_phone = lawyer.User?.Phones?.FirstOrDefault(p => p.IsMain)?.Number
+                     ?? lawyer.User?.Phones?.FirstOrDefault()?.Number
+            };
+
+            // Serialize to JsonElement for PostgreSQL JSONB compatibility
+            return JsonSerializer.SerializeToElement(WrapedLawer);
+        }
+
+        private async Task<UserLog> BuildLawyerLog(Lawyer lawyer, User editor, string actionType, JsonElement oldValue, JsonElement newValue)
+        {
+            int actionTypeId = await GetActionLogTypeIdByName(actionType);
+            UserLog log = new UserLog
+            {
+                ID = Guid.NewGuid(),
+                AffectedUserID = lawyer.User.ID,
+                UpdatedByID = editor.ID,
+                ActionLogTypeID = actionTypeId,
+                OldValue = oldValue,
+                NewValue = newValue
+            };
+
+
+            return log;
+        }
+
+        private async Task<int> GetActionLogTypeIdByName(string name)
+        {
+            var actionLogType = await _context.ActionLogTypes
+                .FirstOrDefaultAsync(alt => alt.Name == name);
+
+            if (actionLogType == null)
+            {
+                throw new KeyNotFoundException($"ActionLogType with name '{name}' not found");
+            }
+
+            return actionLogType.ID;
         }
     }
 }
