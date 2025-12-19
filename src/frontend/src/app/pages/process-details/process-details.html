@@ -25,7 +25,8 @@
                 No documents uploaded yet.
               </div>
 
-              <article class="attachment-item" *ngFor="let doc of documents; let i = index">
+              <article class="attachment-item" *ngFor="let doc of documents; let i = index"
+                (click)="downloadDocument(doc)" style="cursor: pointer;">
                 <div class="attachment-icon">
                   <img [src]="getDocumentIcon(doc.name)" alt="file icon" />
                 </div>
