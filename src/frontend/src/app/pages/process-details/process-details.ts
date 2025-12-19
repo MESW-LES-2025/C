@@ -16,6 +16,7 @@ import {
 import { MessageDetailsModalComponent } from '../../shared/message-details-modal/message-details-modal';
 import { NotificationService } from '../../shared/notification/notification.service';
 import { ButtonComponent } from '../../shared/button/button';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-process-details',
@@ -248,9 +249,12 @@ export class ProcessDetailsComponent {
       return;
     }
 
-    // Create a full URL using the API base URL
-    const apiBaseUrl = 'http://localhost:8080';  // This should match your environment
-    const downloadUrl = `${apiBaseUrl}${doc.raw.downloadUrl}`;
+    // Create a full URL using the environment API base URL
+    // environment.apiBaseUrl is 'http://localhost:8080/api' (or production URL)
+    // downloadUrl from backend is '/api/documents/123/download'
+    // So we remove '/api' from base and append the full path
+    const baseUrl = environment.apiBaseUrl.replace('/api', '');
+    const downloadUrl = `${baseUrl}${doc.raw.downloadUrl}`;
 
     // Use HttpClient to download with auth headers (via auth interceptor)
     this.http.get(downloadUrl, { responseType: 'blob' }).subscribe({

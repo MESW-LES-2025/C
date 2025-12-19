@@ -6,12 +6,9 @@ services:
       target: build-backend-prod
     ports:
       - "8080:8080"
-    # depends_on:
-    #   - qdrant
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      #- Qdrant__Url=http://qdrant:6333
       - Logging__LogLevel__Default=Information
 
   frontend:
@@ -23,13 +20,3 @@ services:
         CONFIGURATION: ${FRONTEND_CONFIG:-production}
     ports:
       - "4200:80"
-    #qdrant:
-    # image: qdrant/qdrant:latest
-    # restart: always
-    # ports:
-    #  - "6333:6333"
-    #volumes:
-    # - qdrant_data:/qdrant/storage
-
-volumes:
-  qdrant_data:
