@@ -1,23 +1,24 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { LawyerService } from './lawyer.service';
-import { environment } from '../../environments/environment';
 
 describe('LawyerService', () => {
   let service: LawyerService;
   let httpMock: HttpTestingController;
+  const apiUrl = 'http://localhost:8080/api';
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        LawyerService,
+        provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideZonelessChangeDetection(),
-      ],
+        LawyerService
+      ]
     });
+
     service = TestBed.inject(LawyerService);
     httpMock = TestBed.inject(HttpTestingController);
   });
@@ -30,57 +31,116 @@ describe('LawyerService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should fetch lawyers from API', (done) => {
-    const mockLawyers = {
-      data: [{ id: '1', name: 'Lawyer 1' }],
-      meta: { totalCount: 1 },
-    };
+  describe('getLawyers', () => {
+    it('should fetch lawyers list', () => {
+      const mockResponse = { data: [{ id: '1', name: 'John Doe' }], meta: { totalCount: 1 } };
 
-    service.getLawyers().subscribe((res) => {
-      expect(res.data.length).toBe(1);
-      expect(res.data[0].name).toBe('Lawyer 1');
-      done();
+      service.getLawyers().subscribe(response => {
+        expect(response.data.length).toBe(1);
+        expect(response.data[0].name).toBe('John Doe');
+      });
+
+      const req = httpMock.expectOne(`${apiUrl}/lawyers`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockResponse);
     });
 
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/lawyers`);
-    expect(req.request.method).toBe('GET');
-    req.flush(mockLawyers);
+    it('should pass params when provided', () => {
+      service.getLawyers({ page: 2, search: 'test' }).subscribe();
+
+      const req = httpMock.expectOne(req => req.url.includes('/lawyers'));
+      expect(req.request.params.get('page')).toBe('2');
+      expect(req.request.params.get('search')).toBe('test');
+      req.flush({ data: [], meta: {} });
+    });
   });
 
-  it('should fetch a single lawyer by id', (done) => {
-    const mockLawyer = { id: '123', name: 'Lawyer A' };
+  describe('getLawyer', () => {
+    it('should fetch single lawyer by id', () => {
+      const mockLawyer = { id: '123', name: 'John Doe' };
 
-    service.getLawyer('123').subscribe((resp) => {
-      expect(resp.id).toBe('123');
-      done();
+      service.getLawyer('123').subscribe(lawyer => {
+        expect(lawyer.id).toBe('123');
+        expect(lawyer.name).toBe('John Doe');
+      });
+
+      const req = httpMock.expectOne(`${apiUrl}/lawyers/123`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockLawyer);
     });
-
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/lawyers/123`);
-    expect(req.request.method).toBe('GET');
-    req.flush(mockLawyer);
   });
 
-  it('should delete a lawyer', (done) => {
-    service.deleteLawyer('123').subscribe((resp) => {
-      expect(resp).toEqual({});
-      done();
-    });
+  describe('deleteLawyer', () => {
+    it('should delete lawyer by id', () => {
+      service.deleteLawyer('123').subscribe();
 
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/lawyers/123`);
-    expect(req.request.method).toBe('DELETE');
-    req.flush({});
+      const req = httpMock.expectOne(`${apiUrl}/lawyers/123`);
+      expect(req.request.method).toBe('DELETE');
+      req.flush({});
+    });
   });
 
-  it('should create a lawyer', (done) => {
-    const payload = { name: 'New Lawyer', email: 'new@test.com', password: 'Password123!', professionalRegister: 'PR-1' };
-    service.createLawyer(payload).subscribe((resp) => {
-      expect(resp).toEqual({});
-      done();
+  describe('createLawyer', () => {
+    it('should create new lawyer', () => {
+      const newLawyer = { name: 'Jane Doe', email: 'jane@example.com', password: 'password123' };
+
+      service.createLawyer(newLawyer).subscribe(response => {
+        expect(response).toBeTruthy();
+      });
+
+      const req = httpMock.expectOne(`${apiUrl}/lawyers`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(newLawyer);
+      req.flush({ id: '456', ...newLawyer });
+    });
+  });
+
+  describe('updateLawyer', () => {
+    it('should update existing lawyer', () => {
+      const updatePayload = { name: 'John Updated' };
+
+      service.updateLawyer('123', updatePayload).subscribe();
+
+      const req = httpMock.expectOne(`${apiUrl}/lawyers/123`);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual(updatePayload);
+      req.flush({ id: '123', ...updatePayload });
+    });
+  });
+
+  describe('getProcessesByLawyer', () => {
+    it('should fetch processes for a lawyer', () => {
+      const mockProcesses = { data: [{ id: '1', name: 'Process 1' }] };
+
+      service.getProcessesByLawyer('123').subscribe(response => {
+        expect(response.data.length).toBe(1);
+      });
+
+      const req = httpMock.expectOne(req => req.url.includes('/processes/lawyer/123'));
+      expect(req.request.method).toBe('GET');
+      req.flush(mockProcesses);
     });
 
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/lawyers`);
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body.name).toBe('New Lawyer');
-    req.flush({});
+    it('should pass pagination and search params', () => {
+      service.getProcessesByLawyer('123', 2, 'search term').subscribe();
+
+      const req = httpMock.expectOne(req => req.url.includes('/processes/lawyer/123'));
+      expect(req.request.params.get('page')).toBe('2');
+      expect(req.request.params.get('search')).toBe('search term');
+      req.flush({ data: [] });
+    });
+  });
+
+  describe('createProcess', () => {
+    it('should create new process', () => {
+      const processData = { name: 'New Process', clientId: '456' };
+
+      service.createProcess(processData).subscribe();
+
+      const req = httpMock.expectOne(`${apiUrl}/processes`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(processData);
+      req.flush({ id: '789', ...processData });
+    });
   });
 });

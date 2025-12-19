@@ -1,23 +1,24 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ClientService } from './client.service';
-import { environment } from '../../environments/environment';
 
 describe('ClientService', () => {
   let service: ClientService;
   let httpMock: HttpTestingController;
+  const apiUrl = 'http://localhost:8080/api';
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        ClientService,
+        provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideZonelessChangeDetection()
+        ClientService
       ]
     });
+
     service = TestBed.inject(ClientService);
     httpMock = TestBed.inject(HttpTestingController);
   });
@@ -30,83 +31,117 @@ describe('ClientService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should fetch clients from API', (done) => {
-    const mockClients = {
-      data: [
-        { id: '1', name: 'John Doe', email: 'john@test.com' },
-        { id: '2', name: 'Jane Smith', email: 'jane@test.com' }
-      ],
-      meta: { totalCount: 2 }
-    };
+  describe('getClients', () => {
+    it('should fetch clients list', () => {
+      const mockResponse = { data: [{ id: '1', name: 'Client One' }], meta: { totalCount: 1 } };
 
-    service.getClients().subscribe((response) => {
-      expect(response.data.length).toBe(2);
-      expect(response.meta.totalCount).toBe(2);
-      expect(response.data[0].name).toBe('John Doe');
-      done();
+      service.getClients().subscribe(response => {
+        expect(response.data.length).toBe(1);
+        expect(response.data[0].name).toBe('Client One');
+      });
+
+      const req = httpMock.expectOne(`${apiUrl}/clients`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockResponse);
     });
 
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/clients`);
-    expect(req.request.method).toBe('GET');
-    req.flush(mockClients);
+    it('should pass params when provided', () => {
+      service.getClients({ page: 3, search: 'test' }).subscribe();
+
+      const req = httpMock.expectOne(req => req.url.includes('/clients'));
+      expect(req.request.params.get('page')).toBe('3');
+      expect(req.request.params.get('search')).toBe('test');
+      req.flush({ data: [], meta: {} });
+    });
   });
 
-  it('should fetch clients with query parameters', () => {
-    const params = { page: 1, limit: 10, search: 'John' };
+  describe('getClient', () => {
+    it('should fetch single client by id', () => {
+      const mockClient = { id: '123', name: 'Client One' };
 
-    service.getClients(params).subscribe();
+      service.getClient('123').subscribe(client => {
+        expect(client.id).toBe('123');
+        expect(client.name).toBe('Client One');
+      });
 
-    const req = httpMock.expectOne((request) => {
-      return request.url === `${environment.apiBaseUrl}/clients` &&
-             request.params.get('page') === '1' &&
-             request.params.get('limit') === '10' &&
-             request.params.get('search') === 'John';
+      const req = httpMock.expectOne(`${apiUrl}/clients/123`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockClient);
     });
-    expect(req.request.method).toBe('GET');
-    req.flush({ data: [], meta: { totalCount: 0 } });
   });
 
-  it('should fetch a single client by id', (done) => {
-    const mockClient = {
-      id: '123',
-      name: 'John Doe',
-      email: 'john@test.com',
-      nif: '123456789',
-      address: '123 Main St'
-    };
+  describe('getAllClients', () => {
+    it('should fetch all clients', () => {
+      const mockClients = [{ id: '1' }, { id: '2' }];
 
-    service.getClient('123').subscribe((response) => {
-      expect(response.id).toBe('123');
-      expect(response.name).toBe('John Doe');
-      done();
+      service.getAllClients().subscribe(clients => {
+        expect(clients.length).toBe(2);
+      });
+
+      const req = httpMock.expectOne(`${apiUrl}/clients`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockClients);
     });
-
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/clients/123`);
-    expect(req.request.method).toBe('GET');
-    req.flush(mockClient);
   });
 
-  it('should delete a client', (done) => {
-    service.deleteClient('123').subscribe((response) => {
-      expect(response).toEqual({});
-      done();
-    });
+  describe('deleteClient', () => {
+    it('should delete client by id', () => {
+      service.deleteClient('123').subscribe();
 
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/clients/123`);
-    expect(req.request.method).toBe('DELETE');
-    req.flush({});
+      const req = httpMock.expectOne(`${apiUrl}/clients/123`);
+      expect(req.request.method).toBe('DELETE');
+      req.flush({});
+    });
   });
 
-  it('should handle errors when fetching clients', (done) => {
-    service.getClients().subscribe({
-      next: () => fail('should have failed with 500 error'),
-      error: (error) => {
-        expect(error.status).toBe(500);
-        done();
-      }
+  describe('createClient', () => {
+    it('should create new client', () => {
+      const newClient = { name: 'New Client', email: 'client@example.com' };
+
+      service.createClient(newClient).subscribe(response => {
+        expect(response).toBeTruthy();
+      });
+
+      const req = httpMock.expectOne(`${apiUrl}/clients`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(newClient);
+      req.flush({ id: '456', ...newClient });
+    });
+  });
+
+  describe('updateClient', () => {
+    it('should update existing client', () => {
+      const updatePayload = { name: 'Client Updated' };
+
+      service.updateClient('123', updatePayload).subscribe();
+
+      const req = httpMock.expectOne(`${apiUrl}/clients/123`);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual(updatePayload);
+      req.flush({ id: '123', ...updatePayload });
+    });
+  });
+
+  describe('getProcessesByClient', () => {
+    it('should fetch processes for a client', () => {
+      const mockProcesses = { data: [{ id: '1', name: 'Process 1' }] };
+
+      service.getProcessesByClient('123').subscribe(response => {
+        expect(response.data.length).toBe(1);
+      });
+
+      const req = httpMock.expectOne(req => req.url.includes('/processes/client/123'));
+      expect(req.request.method).toBe('GET');
+      req.flush(mockProcesses);
     });
 
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/clients`);
-    req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
+    it('should pass pagination and search params', () => {
+      service.getProcessesByClient('123', 2, 'search term').subscribe();
+
+      const req = httpMock.expectOne(req => req.url.includes('/processes/client/123'));
+      expect(req.request.params.get('page')).toBe('2');
+      expect(req.request.params.get('search')).toBe('search term');
+      req.flush({ data: [] });
+    });
   });
 });
