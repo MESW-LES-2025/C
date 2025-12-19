@@ -17,6 +17,7 @@ export class MessageDetailsModalComponent {
   @Input() date: string = '';
   @Input() readAt: string | null = null;
   @Input() isMine: boolean = false;
+  @Input() canReply: boolean = true;
 
   @Output() close = new EventEmitter<void>();
   @Output() reply = new EventEmitter<void>();

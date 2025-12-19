@@ -104,7 +104,7 @@ export class ProcessDetailsComponent {
         try {
           const url = `/processes/${id}`;
           if (res?.name) this.breadcrumbService.setLabelOverride(url, res.name);
-        } catch (e) {}
+        } catch (e) { }
 
         if (res.clientId) {
           this.process.client = {
@@ -217,7 +217,7 @@ export class ProcessDetailsComponent {
       next: () => {
         this.loadProcess(this.process.id);
       },
-      error: () => {},
+      error: () => { },
     });
   }
 
@@ -236,7 +236,7 @@ export class ProcessDetailsComponent {
         this.documents.splice(i, 1);
         this.cdr.detectChanges();
       },
-      error: () => {},
+      error: () => { },
     });
   }
 
@@ -270,11 +270,12 @@ export class ProcessDetailsComponent {
         this.cdr.detectChanges();
         setTimeout(() => this.scrollToBottom(), 100);
 
-        if (this.currentUserId) {
+        // Don't mark messages as read if user is Admin (admins only view, don't participate)
+        if (this.currentUserId && this.role !== 'Admin') {
           const userId = this.currentUserId;
           this.messageService.markMessagesAsRead(this.process.id, userId).subscribe({
-            next: () => {},
-            error: () => {},
+            next: () => { },
+            error: () => { },
           });
         }
       },
@@ -312,9 +313,13 @@ export class ProcessDetailsComponent {
   recipientNameForModal = '';
 
   canSendMessage(): boolean {
-    if (this.role === 'Client') return true;
+    // Admins cannot send messages - they can only view
+    if (this.role === 'Admin') return false;
+    // Lawyers can only reply to messages, not create new ones
     if (this.role === 'Lawyer') return false;
-    return true;
+    // Clients can create new messages
+    if (this.role === 'Client') return true;
+    return false;
   }
 
   openCreateMessageModal(prefillSubject: string = '', prefillBody: string = '') {

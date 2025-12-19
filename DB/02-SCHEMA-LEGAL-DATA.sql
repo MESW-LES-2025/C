@@ -59,6 +59,36 @@ FROM (
 CROSS JOIN t2
 ON CONFLICT (process_type_id, process_phase_id) DO NOTHING;
 
+WITH
+  t AS (SELECT process_type_id FROM LEGAL.process_type WHERE process_type_name = 'Labor'),
+  p1 AS (SELECT process_phase_id FROM LEGAL.process_phase WHERE process_phase_name = 'Initiation'),
+  p2 AS (SELECT process_phase_id FROM LEGAL.process_phase WHERE process_phase_name = 'Discovery'),
+  p3 AS (SELECT process_phase_id FROM LEGAL.process_phase WHERE process_phase_name = 'Trial')
+INSERT INTO LEGAL.process_type_phase (process_phase_id, process_type_id, process_type_phase_order, process_type_phase_is_optional, process_type_phase_is_active)
+SELECT p.process_phase_id, t.process_type_id, ord, FALSE, TRUE
+FROM (
+  SELECT p1.process_phase_id, 1 AS ord FROM p1
+  UNION ALL SELECT p2.process_phase_id, 2 AS ord FROM p2
+  UNION ALL SELECT p3.process_phase_id, 3 AS ord FROM p3
+) p
+CROSS JOIN t
+ON CONFLICT (process_type_id, process_phase_id) DO NOTHING;
+
+WITH
+  t AS (SELECT process_type_id FROM LEGAL.process_type WHERE process_type_name = 'Administrative'),
+  p1 AS (SELECT process_phase_id FROM LEGAL.process_phase WHERE process_phase_name = 'Initiation'),
+  p2 AS (SELECT process_phase_id FROM LEGAL.process_phase WHERE process_phase_name = 'Discovery'),
+  p3 AS (SELECT process_phase_id FROM LEGAL.process_phase WHERE process_phase_name = 'Trial')
+INSERT INTO LEGAL.process_type_phase (process_phase_id, process_type_id, process_type_phase_order, process_type_phase_is_optional, process_type_phase_is_active)
+SELECT p.process_phase_id, t.process_type_id, ord, FALSE, TRUE
+FROM (
+  SELECT p1.process_phase_id, 1 AS ord FROM p1
+  UNION ALL SELECT p2.process_phase_id, 2 AS ord FROM p2
+  UNION ALL SELECT p3.process_phase_id, 3 AS ord FROM p3
+) p
+CROSS JOIN t
+ON CONFLICT (process_type_id, process_phase_id) DO NOTHING;
+
 -- Set default row for process_status if missing -- ensures at least Open exists
 UPDATE LEGAL.process_status SET process_status_is_default = TRUE
 WHERE process_status_name = 'Open';

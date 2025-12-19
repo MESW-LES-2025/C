@@ -43,7 +43,7 @@
     </div>
 
     <div class="msg-footer">
-      <button class="reply-btn" (click)="onReply()"><i class="fa fa-reply"></i> Reply</button>
+      <button *ngIf="canReply" class="reply-btn" (click)="onReply()"><i class="fa fa-reply"></i> Reply</button>
     </div>
   </div>
 </div>

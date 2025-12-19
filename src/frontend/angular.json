@@ -117,6 +117,11 @@
           "builder": "@angular/build:karma",
           "options": {
             "tsConfig": "tsconfig.spec.json",
+            "codeCoverageExclude": [
+              "**/*.spec.ts",
+              "**/test-helpers/**",
+              "**/mock-*.ts"
+            ],
             "assets": [
               {
                 "glob": "**/*",
