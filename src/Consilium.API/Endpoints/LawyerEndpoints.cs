@@ -177,22 +177,24 @@ public static class LawyerEndpoints
         }
     }
 
-    private static async Task<(Guid id, IResult? error)> ValidateEditor(ClaimsPrincipal userClaims, ILawyerRepository repo)
+    private static async Task<(Guid id, IResult? error)> ValidateEditor(
+        ClaimsPrincipal userClaims,
+        ILawyerRepository repo)
     {
-        // 1. Extract the user ID from the Token claims
-        var userIdClaim = userClaims?.FindFirst("user_id")?.Value;
+        // 1. Extract the user ID from the Token claims.
+        // Use .Trim() to ensure no accidental whitespace causes a parsing failure.
+        var userIdClaim = userClaims?.FindFirst("user_id")?.Value?.Trim();
 
-        // 2. Validate if the claim exists and is a valid Guid
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var editorId))
+        // 2. Check if the claim exists at all
+        if (string.IsNullOrEmpty(userIdClaim))
         {
-            return (Guid.Empty, Results.BadRequest(new { message = "Operation aborted: Unauthenticated user or invalid Token." }));
+            return (Guid.Empty, Results.Unauthorized());
         }
 
-        // 3. Verify if the editor user exists in the database
-        var loggedUserFromDB = await repo.GetById(editorId);
-        if (loggedUserFromDB == null)
+        // 3. Check if the value is a valid Guid format
+        if (!Guid.TryParse(userIdClaim, out var editorId))
         {
-            return (Guid.Empty, Results.NotFound(new { message = "Access denied: Editor user not found in the system." }));
+            return (Guid.Empty, Results.BadRequest(new { message = "Operation aborted: Malformed User ID in Token." }));
         }
 
         // Return the editor ID and null for the error if everything is valid
