@@ -1,40 +1,62 @@
 using Consilium.Domain.Models;
-namespace Consilium.Application.Interfaces;
 
-public interface IProcessRepository
+namespace Consilium.Application.Interfaces
 {
-    Task<Process?> GetById(Guid id);
+    public interface IProcessRepository
+    {
+        #region CRUD Operations
+        // Methods in this region follow the CRUD order: Create, Read (All then Single), Update, Delete.
 
-    Task<(List<Process> Processes, int TotalCount)> GetAll(
-        string? search,
-        int page,
-        int limit,
-        string? sortBy,
-        string? sortOrder);
+        // Creates a new process record in the database
+        Task<Process> Create(Process process);
 
-    Task<Process> Create(Process process);
+        // Retrieves all processes with support for search, pagination, and dynamic sorting
+        Task<(List<Process> Processes, int TotalCount)> GetAll(
+            string? search,
+            int page,
+            int limit,
+            string? sortBy,
+            string? sortOrder);
 
-    Task Update(Process process);
+        // Retrieves a specific process by its unique identifier
+        Task<Process?> GetById(Guid id);
 
-    Task Delete(Guid id);
+        // Updates an existing process record
+        Task Update(Process process);
 
-    Task<(List<Process> Processes, int TotalCount)> GetByClientId(
-        Guid clientId,
-        string? search,
-        int page,
-        int limit,
-        string? sortBy,
-        string? sortOrder);
+        // Deletes a process record by its unique identifier
+        Task Delete(Guid id);
+        #endregion
 
-    Task<(List<Process> Processes, int TotalCount)> GetByLawyerId(
-        Guid lawyerId,
-        string? search,
-        int page,
-        int limit,
-        string? sortBy,
-        string? sortOrder);
+        #region Relationship Based Operations
+        // Methods in this region are sorted alphabetically.
 
-    Task<List<Process>> GetByClientIdWithDocuments(Guid clientId);
+        // Dissociates all processes currently assigned to a specific lawyer
+        Task DissociateProcessesFromLawyer(Guid id, Guid editorId);
 
-    Task<List<Process>> GetByLawyerIdWithDocuments(Guid lawyerId);
+        // Retrieves processes for a specific client with search, pagination, and sorting
+        Task<(List<Process> Processes, int TotalCount)> GetProcessesByClientId(
+            Guid clientId,
+            string? search,
+            int page,
+            int limit,
+            string? sortBy,
+            string? sortOrder);
+
+        // Retrieves processes for a specific client including their document metadata
+        Task<List<Process>> GetProcessesByClientIdWithDocuments(Guid clientId);
+
+        // Retrieves processes for a specific lawyer with search, pagination, and sorting
+        Task<(List<Process> Processes, int TotalCount)> GetProcessesByLawyerId(
+            Guid lawyerId,
+            string? search,
+            int page,
+            int limit,
+            string? sortBy,
+            string? sortOrder);
+
+        // Retrieves processes for a specific lawyer including their document metadata
+        Task<List<Process>> GetProcessesByLawyerIdWithDocuments(Guid lawyerId);
+        #endregion
+    }
 }

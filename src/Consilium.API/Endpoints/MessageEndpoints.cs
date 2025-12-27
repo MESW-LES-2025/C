@@ -96,7 +96,7 @@ public static class MessageEndpoints
         [FromQuery] int page = 1,
         [FromQuery] int limit = 20)
     {
-        var lawyer = await lawyerRepo.GetById(lawyerId);
+        var lawyer = await lawyerRepo.GetLawyerById(lawyerId);
         if (lawyer == null)
             return Results.NotFound(new { message = $"Lawyer with ID {lawyerId} not found" });
 
@@ -133,8 +133,8 @@ public static class MessageEndpoints
     }
 
     private static async Task<IResult> CreateMessage(
-        CreateMessageRequest request, 
-        IMessageRepository repo, 
+        CreateMessageRequest request,
+        IMessageRepository repo,
         IProcessRepository processRepo,
         IUserRepository userRepo)
     {
@@ -166,7 +166,7 @@ public static class MessageEndpoints
 
         if (!isValid)
         {
-            return Results.BadRequest(new { 
+            return Results.BadRequest(new {
                 message = "Message participants must be the Lawyer and Client associated with this process.",
                 details = $"Process ClientId: {process.ClientId}, Process LawyerId: {process.LawyerId}. Request Sender: {request.SenderId}, Request Recipient: {request.RecipientId}"
             });
@@ -182,7 +182,7 @@ public static class MessageEndpoints
             CreatedAt = DateTime.UtcNow
         };
 
-        try 
+        try
         {
             var created = await repo.Create(message);
             return Results.Created($"/api/messages/{created.Id}", MapToResponseSingle(created));
@@ -200,7 +200,7 @@ public static class MessageEndpoints
         ILawyerRepository lawyerRepo)
     {
         // 1. Verify existence of new lawyer
-        var newLawyer = await lawyerRepo.GetById(request.NewLawyerId);
+        var newLawyer = await lawyerRepo.GetLawyerById(request.NewLawyerId);
         if (newLawyer == null)
             return Results.BadRequest(new { message = $"New lawyer with ID {request.NewLawyerId} not found" });
 

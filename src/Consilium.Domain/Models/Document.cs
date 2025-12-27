@@ -6,9 +6,12 @@ namespace Consilium.Domain.Models
     [Table("document", Schema = "legal")]
     public class Document
     {
-    [Column("document_id")]
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        #region Table Columns
+        // Database columns mapping exactly to the legal.document table.
+
+        [Key]
+        [Column("document_id")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
 
         [Column("process_id")]
@@ -36,13 +39,13 @@ namespace Consilium.Domain.Models
         [Column("created_at")]
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        #endregion
 
-        // [Column("created_by")]
-        // [Required]
-        // public Guid CreatedBy { get; set; }
+        #region Navigation Properties
+        // Object-Relational Mapping (ORM) navigation properties. Links the document to its parent process and enables eager loading.
 
-         public Process? Process { get; set; }
-        //  public User? CreatedByUser { get; set; }
-
+        [ForeignKey("ProcessId")]
+        public virtual Process Process { get; set; } = null!;
+        #endregion
     }
 }

@@ -9,34 +9,83 @@ namespace Consilium.API.Endpoints;
 
 public static class LawyerEndpoints
 {
+    #region Route Mapping
+
     public static void MapLawyerEndpoints(this WebApplication app)
     {
+        // Removi o .WithName("Lawyers") daqui para evitar o conflito global
         var group = app.MapGroup("/api/lawyers")
-            .WithName("Lawyers")
-            .WithOpenApi();
-        group.RequireAuthorization("AdminOrLawyer");
-
-        group.MapGet("/", GetAllLawyers)
-            .WithName("GetAllLawyers")
-            .WithDescription("Retrieve all lawyers");
-
-        group.MapGet("/{id:guid}", GetLawyerById)
-            .WithName("GetLawyerById")
-            .WithDescription("Retrieve a lawyer by ID");
+            .WithOpenApi()
+            .RequireAuthorization("AdminOrLawyer");
 
         group.MapPost("/", CreateLawyer)
-            .WithName("CreateLawyer")
-            .WithDescription("Create a new lawyer");
+            .WithName("CreateLawyer"); // Nome único
 
-        group.MapDelete("/{id:guid}", DeleteLawyer)
-            .WithName("DeleteLawyer")
-            .WithDescription("Delete a lawyer");
+        group.MapGet("/", GetAllLawyers)
+            .WithName("GetAllLawyers"); // Nome único
+
+        group.MapGet("/{id:guid}", GetLawyerById)
+            .WithName("GetLawyerById");
 
         group.MapPatch("/{id:guid}", UpdateLawyer)
-            .WithName("UpdateLawyer")
-            .WithDescription("Update lawyer and user information");
+            .WithName("UpdateLawyer");
+
+        group.MapDelete("/{id:guid}", DeleteLawyer)
+            .WithName("DeleteLawyer");
     }
 
+    #endregion
+
+    #region Action Handlers - CRUD Operations
+
+    /// <summary>
+    /// Handles the registration of a new lawyer, including user account and phone numbers.
+    /// </summary>
+    private static async Task<IResult> CreateLawyer(
+        CreateLawyerRequest request,
+        ILawyerRepository repo,
+        IPasswordHasher hasher,
+        ClaimsPrincipal userClaims)
+    {
+
+        var editorId = GetUserIdFromClaims(userClaims);
+        if (editorId == Guid.Empty) return Results.Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+            return Results.BadRequest(new { message = "Email is required" });
+
+        if (string.IsNullOrWhiteSpace(request.NIF) || request.NIF.Length != 9)
+            return Results.BadRequest(new { message = "Invalid NIF" });
+
+        var user = new User
+        {
+            Email = request.Email,
+            PasswordHash = hasher.HashPassword(request.Password),
+            Name = request.Name,
+            NIF = request.NIF,
+            IsActive = true
+        };
+
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+        {
+            user.Phones.Add(new Phone
+            {
+                ID = Guid.NewGuid(),
+                Number = request.PhoneNumber,
+                CountryCode = request.PhoneCountryCode ?? 351,
+                IsMain = true
+            });
+        }
+
+        var lawyer = new Lawyer { ProfessionalRegister = request.ProfessionalRegister };
+        var newLawyer = await repo.Create(user, lawyer, editorId);
+
+        return Results.Created($"/api/lawyers/{newLawyer.ID}", MapToLawyerResponse(newLawyer));
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of all lawyers with optional search and status filtering.
+    /// </summary>
     private static async Task<IResult> GetAllLawyers(
         ILawyerRepository repo,
         [FromQuery] string? search,
@@ -47,229 +96,93 @@ public static class LawyerEndpoints
         [FromQuery] string? sortOrder = "asc")
     {
         var (lawyers, totalCount) = await repo.GetAll(search, status, page, limit, sortBy, sortOrder);
+        var response = lawyers.Select(MapToLawyerResponse);
 
-        var response = lawyers.Select(l =>
-        {
-            var mainPhone = l.User?.Phones?.FirstOrDefault(p => p.IsMain == true);
-            var phoneStr = mainPhone != null ? mainPhone.Number : string.Empty;
-            return new LawyerResponse(
-                Id: l.ID,
-                Email: l.User?.Email ?? string.Empty,
-                Name: l.User?.Name ?? string.Empty,
-                Status: l.User?.IsActive == true ? UserStatus.ACTIVE : UserStatus.INACTIVE,
-                NIF: l.User?.NIF ?? string.Empty,
-                ProfessionalRegister: l.ProfessionalRegister,
-                Phone: phoneStr,
-                PhoneCountryCode: mainPhone != null ? mainPhone.CountryCode : (short?)null
-            );
-        });
-
-        return Results.Ok(new
-        {
-            data = response,
-            meta = new
-            {
-                totalCount,
-                page,
-                limit
-            }
-        });
+        return Results.Ok(new { data = response, meta = new { totalCount, page, limit } });
     }
 
-    private static async Task<IResult> GetLawyerById(Guid id, ILawyerRepository repo)
-    {
-        var lawyer = await repo.GetById(id);
-
-        if (lawyer is null)
-        {
-            return Results.NotFound(new { message = $"Lawyer with ID {id} not found" });
-        }
-
-        // Using the existing private mapping method to standardize the response
-        return Results.Ok(MapToLawyerResponse(lawyer));
-    }
-
-    private static async Task<IResult> CreateLawyer(
-        CreateLawyerRequest request,
+    /// <summary>
+    /// Retrieves a single lawyer profile. This triggers the profile-view audit log.
+    /// </summary>
+    private static async Task<IResult> GetLawyerById(
+        Guid id,
         ILawyerRepository repo,
-        IPasswordHasher hasher)
+        ClaimsPrincipal userClaims)
     {
-        // Validate input
-        if (string.IsNullOrWhiteSpace(request.Email))
-            return Results.BadRequest(new { message = "Email is required" });
+        var editorId = GetUserIdFromClaims(userClaims);
+        if (editorId == Guid.Empty) return Results.Unauthorized();
 
-        if (string.IsNullOrWhiteSpace(request.Password))
-            return Results.BadRequest(new { message = "Password is required" });
-
-        if (string.IsNullOrWhiteSpace(request.NIF) || request.NIF.Length != 9)
-            return Results.BadRequest(new { message = "NIF must be a 9-character string" });
-
-        if (string.IsNullOrWhiteSpace(request.ProfessionalRegister))
-            return Results.BadRequest(new { message = "Professional register is required" });
-
-        // Hash the password
-        var hashedPassword = hasher.HashPassword(request.Password);
-
-        // Create user and lawyer
-        var user = new User
-        {
-            Email = request.Email,
-            PasswordHash = hashedPassword,
-            Name = request.Name,
-            NIF = request.NIF,
-            IsActive = true
-        };
-
-        // If phone information is provided, attach it to the User so EF will persist it
-        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
-        {
-            var phone = new Phone
-            {
-                ID = Guid.NewGuid(),
-                Number = request.PhoneNumber,
-                CountryCode = request.PhoneCountryCode ?? 351,
-                IsMain = request.PhoneIsMain ?? true,
-                User = user
-            };
-            user.Phones.Add(phone);
-        }
-
-        var lawyer = new Lawyer
-        {
-            ProfessionalRegister = request.ProfessionalRegister
-        };
-
-        // Save to database
-        var newLawyer = await repo.Create(user, lawyer);
-
-        // Prepare response (include main phone if present)
-        var createdMainPhone = newLawyer.User?.Phones?.FirstOrDefault(p => p.IsMain == true);
-        var createdPhoneStr = createdMainPhone != null ? createdMainPhone.Number : string.Empty;
-
-        var response = new LawyerResponse(
-            Id: newLawyer.ID,
-            Email: newLawyer.User?.Email ?? string.Empty,
-            Name: newLawyer.User?.Name ?? string.Empty,
-            Status: UserStatus.ACTIVE,
-            NIF: newLawyer.User?.NIF ?? string.Empty,
-            ProfessionalRegister: newLawyer.ProfessionalRegister,
-            Phone: createdPhoneStr,
-            PhoneCountryCode: createdMainPhone != null ? createdMainPhone.CountryCode : (short?)null
-        );
-
-        return Results.Created($"/api/lawyers/{newLawyer.ID}", response);
-    }
-
-    private static async Task<IResult> DeleteLawyer(Guid id, ILawyerRepository repo)
-    {
         try
         {
-            await repo.Delete(id);
+            // Using GetLawyerProfileById to ensure the access is audited
+            var lawyer = await repo.GetLawyerProfileById(id, editorId);
+            return Results.Ok(MapToLawyerResponse(lawyer!));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Results.NotFound(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Updates an existing lawyer's details. Modification history is tracked in the repository.
+    /// </summary>
+    private static async Task<IResult> UpdateLawyer(
+        Guid id,
+        UpdateLawyerRequest request,
+        ILawyerRepository repo,
+        IPasswordHasher hasher,
+        ClaimsPrincipal userClaims)
+    {
+        var editorId = GetUserIdFromClaims(userClaims);
+        if (editorId == Guid.Empty) return Results.Unauthorized();
+
+        if (!IsUpdateDataProvided(request))
+            return Results.BadRequest(new { message = "No data provided for update" });
+
+        var (userUpdates, lawyerUpdates) = MapUpdateEntities(request, hasher);
+
+        var updatedLawyer = await repo.UpdateLawyerAndUser(id, lawyerUpdates, userUpdates, editorId, request.IsActive);
+
+        return updatedLawyer is null
+            ? Results.NotFound(new { message = $"Lawyer {id} not found" })
+            : Results.Ok(MapToLawyerResponse(updatedLawyer));
+    }
+
+    /// <summary>
+    /// Permanently deletes a lawyer and their associated data.
+    /// </summary>
+    private static async Task<IResult> DeleteLawyer(Guid id, ILawyerRepository repo, ClaimsPrincipal userClaims)
+    {
+        var editorId = GetUserIdFromClaims(userClaims);
+        if (editorId == Guid.Empty) return Results.Unauthorized();
+
+        try
+        {
+            await repo.Delete(id, editorId);
             return Results.NoContent();
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException ex)
         {
-            return Results.NotFound(new { message = $"Lawyer with ID {id} not found" });
+            return Results.NotFound(new { message = ex.Message });
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("active"))
+        catch (InvalidOperationException ex)
         {
-            return Results.Conflict(new { message = "Lawyer has active/open cases and cannot be deleted" });
+            return Results.Conflict(new { message = ex.Message });
         }
     }
 
-    private static async Task<(Guid id, IResult? error)> ValidateEditor(
-        ClaimsPrincipal userClaims,
-        ILawyerRepository repo)
-    {
-        // 1. Extract the user ID from the Token claims.
-        // Use .Trim() to ensure no accidental whitespace causes a parsing failure.
-        var userIdClaim = userClaims?.FindFirst("user_id")?.Value?.Trim();
+    #endregion
 
-        // 2. Check if the claim exists at all
-        if (string.IsNullOrEmpty(userIdClaim))
-        {
-            return (Guid.Empty, Results.Unauthorized());
-        }
+    #region Private Helpers
 
-        // 3. Check if the value is a valid Guid format
-        if (!Guid.TryParse(userIdClaim, out var editorId))
-        {
-            return (Guid.Empty, Results.BadRequest(new { message = "Operation aborted: Malformed User ID in Token." }));
-        }
-
-        // Return the editor ID and null for the error if everything is valid
-        return (editorId, null);
-    }
-
-
-    private static IResult? ValidateUpdateRequest(UpdateLawyerRequest request)
-    {
-        // 1. Check if at least one field is provided for update
-        bool hasData = !string.IsNullOrWhiteSpace(request.Name) ||
-                       !string.IsNullOrWhiteSpace(request.Email) ||
-                       !string.IsNullOrWhiteSpace(request.Password) ||
-                       !string.IsNullOrWhiteSpace(request.ProfessionalRegister) ||
-                       !string.IsNullOrWhiteSpace(request.NIF) ||
-                       !string.IsNullOrWhiteSpace(request.PhoneNumber) ||
-                       request.IsActive.HasValue;
-
-        if (!hasData)
-        {
-            return Results.BadRequest(new { message = "At least one field must be provided for update" });
-        }
-
-        // 2. If NIF is provided, ensure basic length validation
-        if (!string.IsNullOrWhiteSpace(request.NIF) && request.NIF.Length != 9)
-        {
-            return Results.BadRequest(new { message = "NIF must be a 9-character string" });
-        }
-
-        // Return null if all validations pass
-        return null;
-    }
-
-
-    private static (User userUpdates, Lawyer lawyerUpdates) MapUpdateEntities(UpdateLawyerRequest request, IPasswordHasher hasher)
-    {
-        // 1. Create the User update container
-        var userUpdates = new User
-        {
-            Name = request.Name ?? string.Empty,
-            Email = request.Email ?? string.Empty,
-            PasswordHash = !string.IsNullOrWhiteSpace(request.Password)
-                ? hasher.HashPassword(request.Password)
-                : string.Empty,
-            NIF = request.NIF ?? string.Empty
-        };
-
-        // 2. Attach phone info if provided in the request
-        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
-        {
-            userUpdates.Phones.Add(new Phone
-            {
-                ID = Guid.NewGuid(),
-                Number = request.PhoneNumber,
-                CountryCode = request.PhoneCountryCode ?? 351,
-                IsMain = request.PhoneIsMain ?? true
-            });
-        }
-
-        // 3. Create the Lawyer update container
-        var lawyerUpdates = new Lawyer
-        {
-            ProfessionalRegister = request.ProfessionalRegister ?? string.Empty
-        };
-
-        return (userUpdates, lawyerUpdates);
-    }
-
-
+    /// <summary>
+    /// Maps the Domain model to the Response DTO for the Client/Frontend.
+    /// </summary>
     private static LawyerResponse MapToLawyerResponse(Lawyer lawyer)
     {
-        // Identify the main phone record if it exists
-        var mainPhone = lawyer.User?.Phones?.FirstOrDefault(p => p.IsMain == true);
+        var mainPhone = lawyer.User?.Phones?.FirstOrDefault(p => p.IsMain);
 
-        // Map the domain entity to the DTO (Data Transfer Object)
         return new LawyerResponse(
             Id: lawyer.ID,
             Email: lawyer.User?.Email ?? string.Empty,
@@ -282,41 +195,46 @@ public static class LawyerEndpoints
         );
     }
 
-
-
-    private static async Task<IResult> UpdateLawyer(
-        Guid id,
-        UpdateLawyerRequest request,
-        ILawyerRepository repo,
-        IPasswordHasher hasher,
-        ClaimsPrincipal userClaims)
+    /// <summary>
+    /// Extracts the user ID from the JWT access token claims.
+    /// </summary>
+    private static Guid GetUserIdFromClaims(ClaimsPrincipal user)
     {
-
-        // Validate editor user from token claims
-        var (editorId, errorResult) = await ValidateEditor(userClaims, repo);
-        if (errorResult != null)
-        {
-            return errorResult;
-        }
-
-        // Validate input request
-        var validationError = ValidateUpdateRequest(request);
-        if (validationError != null)
-        {
-            return validationError;
-        }
-
-        // Prepare entities for update
-        var (userUpdates, lawyerUpdates) = MapUpdateEntities(request, hasher);
-
-        // Update in the repository (pass through optional IsActive flag)
-        var updatedLawyer = await repo.UpdateLawyerAndUser(id, lawyerUpdates, userUpdates, request.IsActive, editorId);
-        if (updatedLawyer == null)
-        {
-            return Results.NotFound(new { message = $"Lawyer with ID {id} not found" });
-        }
-
-        // Return the formatted response
-        return Results.Ok(MapToLawyerResponse(updatedLawyer));
+        var claim = user.FindFirst("user_id")?.Value;
+        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
     }
+
+    /// <summary>
+    /// Prepares domain entities with provided update data.
+    /// </summary>
+    private static (User userUpdates, Lawyer lawyerUpdates) MapUpdateEntities(UpdateLawyerRequest request, IPasswordHasher hasher)
+    {
+        var userUpdates = new User
+        {
+            Name = request.Name ?? string.Empty,
+            Email = request.Email ?? string.Empty,
+            PasswordHash = !string.IsNullOrWhiteSpace(request.Password) ? hasher.HashPassword(request.Password) : string.Empty,
+            NIF = request.NIF ?? string.Empty
+        };
+
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+        {
+            userUpdates.Phones.Add(new Phone { Number = request.PhoneNumber, IsMain = true });
+        }
+
+        var lawyerUpdates = new Lawyer { ProfessionalRegister = request.ProfessionalRegister ?? string.Empty };
+        return (userUpdates, lawyerUpdates);
+    }
+
+    /// <summary>
+    /// Validates if at least one field is being updated.
+    /// </summary>
+    private static bool IsUpdateDataProvided(UpdateLawyerRequest request)
+    {
+        return !string.IsNullOrWhiteSpace(request.Name) || !string.IsNullOrWhiteSpace(request.Email) ||
+               request.IsActive.HasValue || !string.IsNullOrWhiteSpace(request.ProfessionalRegister) ||
+               !string.IsNullOrWhiteSpace(request.Password) || !string.IsNullOrWhiteSpace(request.PhoneNumber);
+    }
+
+    #endregion
 }

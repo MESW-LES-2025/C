@@ -1,22 +1,55 @@
 using Consilium.Domain.Models;
 
-namespace Consilium.Application.Interfaces
+namespace Consilium.Application.Interfaces;
+
+public interface ILawyerRepository
 {
-    public interface ILawyerRepository
-    {
-        Task<Lawyer?> GetById(Guid id);
+    #region CRUD Operations
 
-        Task<(List<Lawyer> Lawyers, int TotalCount)> GetAll(
-            string? search,
-            string? status,
-            int page,
-            int limit,
-            string? sortBy,
-            string? sortOrder);
+    /// <summary>
+    /// Registers a new lawyer and their associated user account.
+    /// </summary>
+    Task<Lawyer> Create(User user, Lawyer lawyer, Guid editorId);
 
-        Task<Lawyer> Create(User user, Lawyer lawyer);
-        Task Update(Lawyer lawyer);
-        Task<Lawyer?> UpdateLawyerAndUser(Guid lawyerId, Lawyer lawyerUpdates, User userUpdates, bool? isActive = null, Guid? editorId = null);
-        Task Delete(Guid id);
-    }
+    /// <summary>
+    /// Performs a simple database lookup for internal validations without audit logs.
+    /// </summary>
+    Task<Lawyer?> GetLawyerById(Guid id);
+
+    /// <summary>
+    /// Retrieves the full profile for display and records the access in audit logs.
+    /// </summary>
+    Task<Lawyer?> GetLawyerProfileById(Guid id, Guid editorId);
+
+    /// <summary>
+    /// Updates both Lawyer and User records, tracking changes via editorId.
+    /// </summary>
+    Task<Lawyer?> UpdateLawyerAndUser(
+        Guid id,
+        Lawyer lawyerUpdates,
+        User userUpdates,
+        Guid editorId,
+        bool? isActive);
+
+    /// <summary>
+    /// Permanently removes a lawyer and their associated user data from the system.
+    /// </summary>
+    Task Delete(Guid id, Guid editorId);
+
+    #endregion
+
+    #region Search Operations
+
+    /// <summary>
+    /// Returns a paginated list of lawyers with optional search and status filters.
+    /// </summary>
+    Task<(IEnumerable<Lawyer> lawyers, int totalCount)> GetAll(
+        string? search,
+        string? status,
+        int page,
+        int limit,
+        string? sortBy,
+        string? sortOrder);
+
+    #endregion
 }

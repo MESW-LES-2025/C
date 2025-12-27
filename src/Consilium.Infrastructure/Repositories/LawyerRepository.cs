@@ -2,361 +2,333 @@ using System.Text.Json;
 using Consilium.Application.Interfaces;
 using Consilium.Domain.Models;
 using Consilium.Infrastructure.Data;
-using Consilium.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
+namespace Consilium.Infrastructure.Repositories;
 
-
-namespace Consilium.Infrastructure.Repositories
+public class LawyerRepository : ILawyerRepository
 {
-    public class LawyerRepository : ILawyerRepository
+    private readonly AppDbContext _context;
+    private readonly IProcessRepository _processRepository;
+    private readonly JsonElement _emptyJson = JsonSerializer.SerializeToElement(new { });
+
+    public LawyerRepository(AppDbContext context, IProcessRepository processRepository)
     {
-        private readonly AppDbContext _context;
+        _context = context;
+        _processRepository = processRepository;
+    }
 
-        public LawyerRepository(AppDbContext context)
+    #region CRUD Operations
+
+    /// <summary>
+    /// Registers a new lawyer and their associated user account.
+    /// </summary>
+    public async Task<Lawyer> Create(User user, Lawyer lawyer, Guid editorId)
+    {
+        var editor = await GetEditorAsync(editorId);
+
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
         {
-            _context = context;
-        }
+            // Initialize IDs and default status
+            user.ID = Guid.NewGuid();
+            lawyer.ID = user.ID;
+            user.IsActive = true;
 
-        public async Task<Lawyer?> GetById(Guid id)
-        {
-            // Use Include to also load the related User data and Phones
-            return await _context.Lawyers
-                .Include(l => l.User)
-                    .ThenInclude(u => u.Phones)
-                .FirstOrDefaultAsync(l => l.ID == id);
-        }
+            // Ensure mandatory contact information
+            ValidateLawyerPhone(user.Phones);
 
-        public async Task<(List<Lawyer> Lawyers, int TotalCount)> GetAll(
-            string? search,
-            string? status,
-            int page,
-            int limit,
-            string? sortBy,
-            string? sortOrder)
-        {
-            var query = _context.Lawyers
-                .Include(l => l.User)
-                    .ThenInclude(u => u.Phones)
-                .AsQueryable();
+            _context.Users.Add(user);
+            _context.Lawyers.Add(lawyer);
 
-            // Text search across Name, Email, NIF, and Professional Register
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                query = query.Where(l =>
-                    l.User.Name.Contains(search) ||
-                    l.User.Email.Contains(search) ||
-                    l.User.NIF.Contains(search) ||
-                    l.ProfessionalRegister.Contains(search));
-            }
-
-            // Filter by status (IsActive boolean)
-            if (!string.IsNullOrWhiteSpace(status))
-            {
-                var isActive = status.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase);
-                query = query.Where(l => l.User.IsActive == isActive);
-            }
-
-            // Count before pagination
-            var totalCount = await query.CountAsync();
-
-            // Sorting
-            if (!string.IsNullOrWhiteSpace(sortBy))
-            {
-                sortBy = sortBy.ToLower();
-                sortOrder = sortOrder?.ToLower() ?? "asc";
-
-                if (sortBy == "nif")
-                    query = sortOrder == "desc" ? query.OrderByDescending(l => l.User.NIF) : query.OrderBy(l => l.User.NIF);
-                else if (sortBy == "register")
-                    query = sortOrder == "desc" ? query.OrderByDescending(l => l.ProfessionalRegister) : query.OrderBy(l => l.ProfessionalRegister);
-                else
-                    query = sortOrder == "desc" ? query.OrderByDescending(l => l.User.Name) : query.OrderBy(l => l.User.Name);
-            }
-
-            // Pagination
-            var lawyers = await query
-                .Skip((page - 1) * limit)
-                .Take(limit)
-                .ToListAsync();
-
-            return (lawyers, totalCount);
-        }
-
-        public async Task<Lawyer> Create(User user, Lawyer lawyer)
-        {
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                user.ID = Guid.NewGuid();
-                lawyer.ID = user.ID;
-                user.IsActive = true;
-
-                _context.Users.Add(user);
-                _context.Lawyers.Add(lawyer);
-
-                // Record log with the same values for old/new
-                JsonElement initialState = WrapLawyerToLog(lawyer);
-                await RecordLogAsync(lawyer, user, "LAWYER_CREATED", initialState);
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return await GetById(lawyer.ID) ?? lawyer;
-            }
-            catch (Exception)
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        public async Task Update(Lawyer lawyer)
-        {
-            // Note: This only updates the Lawyer table (e.g., ProfessionalRegister)
-            _context.Lawyers.Update(lawyer);
-            await _context.SaveChangesAsync();
-        }
-
-
-        private async Task<User> GetEditorAsync(Guid? editorId)
-        {
-            if (!editorId.HasValue)
-                throw new ArgumentException("Editor ID must be provided for logging purposes");
-
-            // We use FirstOrDefaultAsync to be explicit.
-            // If your User model is very heavy, you could even use .Select() here,
-            // but for logging, the full entity is usually fine.
-            return await _context.Users.FirstOrDefaultAsync(u => u.ID == editorId.Value)
-                   ?? throw new KeyNotFoundException($"Editor user with ID {editorId.Value} not found");
-        }
-
-
-        private async Task<(Lawyer? lawyer, JsonElement? oldValue)> GetExistingLawyerWithLogAsync(Guid lawyerId)
-        {
-            var lawyer = await _context.Lawyers
-                .Include(l => l.User)
-                    .ThenInclude(u => u.Phones)
-                .FirstOrDefaultAsync(l => l.ID == lawyerId);
-
-            if (lawyer == null)
-            {
-                return (null, null);
-            }
-
-            return (lawyer, WrapLawyerToLog(lawyer));
-        }
-
-
-
-        private void ApplyUserUpdates(User existingUser, User updates, bool? isActive)
-        {
-            // Update basic user identity fields if provided
-            if (!string.IsNullOrWhiteSpace(updates.Name))
-                existingUser.Name = updates.Name;
-
-            if (!string.IsNullOrWhiteSpace(updates.Email))
-                existingUser.Email = updates.Email;
-
-            if (!string.IsNullOrWhiteSpace(updates.NIF))
-                existingUser.NIF = updates.NIF;
-
-            if (!string.IsNullOrWhiteSpace(updates.PasswordHash))
-                existingUser.PasswordHash = updates.PasswordHash;
-
-            // Update account status if a new value was explicitly passed
-            if (isActive.HasValue)
-                existingUser.IsActive = isActive.Value;
-        }
-
-
-
-
-
-        private void ApplyPhoneUpdates(User existingUser, ICollection<Phone> phoneUpdates)
-        {
-            // Skip if no phone updates were provided
-            if (phoneUpdates == null || !phoneUpdates.Any()) return;
-
-            var phoneUpd = phoneUpdates.First();
-            var existingMain = existingUser.Phones.FirstOrDefault(p => p.IsMain);
-
-            if (existingMain != null)
-            {
-                // Update existing main phone details
-                if (!string.IsNullOrWhiteSpace(phoneUpd.Number))
-                    existingMain.Number = phoneUpd.Number;
-
-                if (phoneUpd.CountryCode != 0)
-                    existingMain.CountryCode = phoneUpd.CountryCode;
-
-                existingMain.IsMain = phoneUpd.IsMain;
-            }
-            else
-            {
-                // Create and attach a new phone record if none exists
-                var newPhone = new Phone
-                {
-                    ID = Guid.NewGuid(),
-                    UserID = existingUser.ID,
-                    Number = phoneUpd.Number ?? string.Empty,
-                    CountryCode = phoneUpd.CountryCode != 0 ? phoneUpd.CountryCode : (short)351,
-                    IsMain = phoneUpd.IsMain
-                };
-                existingUser.Phones.Add(newPhone);
-                _context.Phones.Add(newPhone);
-            }
-        }
-
-
-        private void ApplyLawyerUpdates(Lawyer existingLawyer, Lawyer updates)
-        {
-            // Update lawyer-specific professional information
-            if (!string.IsNullOrWhiteSpace(updates.ProfessionalRegister))
-                existingLawyer.ProfessionalRegister = updates.ProfessionalRegister;
-        }
-
-
-        private async Task RecordLogAsync(Lawyer lawyer, User editor, string actionType, JsonElement oldValue)
-        {
-            // Capture current state as NewValue
-            JsonElement newValue = WrapLawyerToLog(lawyer);
-
-            // Build the log entry (centralizing the ActionLogType lookup)
-            UserLog log = await BuildLawyerLog(lawyer, editor, actionType, oldValue, newValue);
-
-            // Add it to the context tracking
-            _context.UserLogs.Add(log);
-        }
-
-
-
-
-        public async Task<Lawyer?> UpdateLawyerAndUser(Guid lawyerId, Lawyer lawyerUpdates, User userUpdates, bool? isActive = null, Guid? editorId = null)
-        {
-            // Get and validate the editor
-            User editor = await GetEditorAsync(editorId);
-
-
-            // Get the existing lawyer and prepare the log snapshot
-            var (existingLawyer, oldValue) = await GetExistingLawyerWithLogAsync(lawyerId);
-            if (existingLawyer == null) return null;
-
-            // Applying Entity Changes
-            ApplyUserUpdates(existingLawyer.User, userUpdates, isActive);
-            ApplyPhoneUpdates(existingLawyer.User, userUpdates.Phones);
-
-            // Applying Lawyer-specific Changes
-            ApplyLawyerUpdates(existingLawyer, lawyerUpdates);
-
-
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                _context.Lawyers.Update(existingLawyer);
-                _context.Users.Update(existingLawyer.User);
-
-                // Record log with the captured oldValue
-                await RecordLogAsync(existingLawyer, editor, "LAWYER_UPDATED", oldValue!.Value);
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return existingLawyer;
-            }
-            catch (Exception)
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        public async Task Delete(Guid id)
-        {
-            // Get the lawyer first
-            var lawyer = await _context.Lawyers
-                .Include(l => l.User)
-                .ThenInclude(u => u.Phones)
-                .FirstOrDefaultAsync(l => l.ID == id);
-
-            if (lawyer == null)
-                throw new KeyNotFoundException($"Lawyer with ID {id} not found");
-
-            // Check if lawyer has active/open cases
-            // Check if lawyer has active/open cases
-            var hasActiveCases = await _context.Processes
-                .Include(p => p.Status)
-                .AnyAsync(p => p.LawyerId == id && !p.Status.IsFinal);
-
-            if (hasActiveCases)
-                throw new InvalidOperationException("Lawyer has active/open cases and cannot be deleted");
-
-            // Delete in proper order: Phones -> Lawyer -> User
-            if (lawyer.User?.Phones != null)
-            {
-                foreach (var phone in lawyer.User.Phones)
-                    _context.Phones.Remove(phone);
-            }
-
-            _context.Lawyers.Remove(lawyer);
-
-            if (lawyer.User != null)
-                _context.Users.Remove(lawyer.User);
+            // Record initial state in audit log
+            await RecordLogAsync("LAWYER_CREATED", lawyer, lawyer, editor);
 
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return lawyer;
         }
-
-        private JsonElement WrapLawyerToLog(Lawyer lawyer)
+        catch (Exception)
         {
-            // A flat structure that combines data from both tables
-            var WrapedLawer = new
-            {
-                user_type = "lawyer",
-                // table user_log
-                user_id = lawyer.User?.ID,
-                user_name = lawyer.User?.Name,
-                user_nif = lawyer.User?.NIF,
-                user_email = lawyer.User?.Email,
-                user_is_active = lawyer.User?.IsActive,
-                // table lawyer
-                lawyer_id = lawyer.ID,
-                lawyer_professional_register = lawyer.ProfessionalRegister,
-                // table phone - taking the first one marked as IsMain or just the first in the list
-                user_phone = lawyer.User?.Phones?.FirstOrDefault(p => p.IsMain)?.Number
-                     ?? lawyer.User?.Phones?.FirstOrDefault()?.Number
-            };
-
-            // Serialize to JsonElement for PostgreSQL JSONB compatibility
-            return JsonSerializer.SerializeToElement(WrapedLawer);
-        }
-
-        private async Task<UserLog> BuildLawyerLog(Lawyer lawyer, User editor, string actionType, JsonElement oldValue, JsonElement newValue)
-        {
-            int actionTypeId = await GetActionLogTypeIdByName(actionType);
-            UserLog log = new UserLog
-            {
-                ID = Guid.NewGuid(),
-                AffectedUserID = lawyer.User.ID,
-                UpdatedByID = editor.ID,
-                ActionLogTypeID = actionTypeId,
-                OldValue = oldValue,
-                NewValue = newValue
-            };
-
-
-            return log;
-        }
-
-        private async Task<int> GetActionLogTypeIdByName(string name)
-        {
-            var actionLogType = await _context.ActionLogTypes
-                .FirstOrDefaultAsync(alt => alt.Name == name);
-
-            if (actionLogType == null)
-            {
-                throw new KeyNotFoundException($"ActionLogType with name '{name}' not found");
-            }
-
-            return actionLogType.ID;
+            await transaction.RollbackAsync();
+            throw;
         }
     }
+
+    /// <summary>
+    /// Performs a simple database lookup without triggering audit logs.
+    /// </summary>
+    public async Task<Lawyer?> GetLawyerById(Guid id)
+    {
+        return await _context.Lawyers
+            .Include(l => l.User)
+                .ThenInclude(u => u.Phones)
+            .FirstOrDefaultAsync(l => l.ID == id);
+    }
+
+    /// <summary>
+    /// Retrieves the full profile for display and records a read action.
+    /// </summary>
+    public async Task<Lawyer?> GetLawyerProfileById(Guid id, Guid editorId)
+    {
+        var lawyer = await GetLawyerById(id);
+        if (lawyer == null) throw new KeyNotFoundException($"Lawyer {id} not found.");
+
+        var editor = await GetEditorAsync(editorId);
+
+        // Track who viewed this profile
+        await RecordLogAsync("LAWYER_READ", lawyer, lawyer, editor);
+        await _context.SaveChangesAsync();
+
+        return lawyer;
+    }
+
+    /// <summary>
+    /// Returns a paginated list of lawyers with optional search and status filters.
+    /// </summary>
+    public async Task<(IEnumerable<Lawyer> lawyers, int totalCount)> GetAll(
+        string? search, string? status, int page, int limit, string? sortBy, string? sortOrder)
+    {
+        var query = _context.Lawyers.Include(l => l.User).ThenInclude(u => u.Phones).AsQueryable();
+
+        // Apply filters if provided
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(l => l.User.Name.Contains(search) || l.User.Email.Contains(search) ||
+                                     l.User.NIF.Contains(search) || l.ProfessionalRegister.Contains(search));
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var isActive = status.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase);
+            query = query.Where(l => l.User.IsActive == isActive);
+        }
+
+        var totalCount = await query.CountAsync();
+        query = ApplySorting(query, sortBy, sortOrder);
+
+        // Execute pagination
+        var lawyers = await query.Skip((page - 1) * limit).Take(limit).ToListAsync();
+        return (lawyers, totalCount);
+    }
+
+    /// <summary>
+    /// Updates both Lawyer and User records and logs the changes.
+    /// </summary>
+    public async Task<Lawyer?> UpdateLawyerAndUser(Guid id, Lawyer lawyerUpdates, User userUpdates, Guid editorId, bool? isActive)
+    {
+        var editor = await GetEditorAsync(editorId);
+
+        // Retrieve tracked entity
+        var oldLawyer = await GetLawyerById(id);
+        if (oldLawyer == null) return null;
+
+        // Maintain reference for the update operation
+        var newLawyer = oldLawyer;
+
+        // Apply modifications to the instance
+        ApplyUserUpdates(newLawyer.User, userUpdates, isActive);
+        if (userUpdates.Phones != null && userUpdates.Phones.Any())
+        {
+            ValidateLawyerPhone(userUpdates.Phones);
+            ApplyPhoneUpdates(newLawyer.User, userUpdates.Phones);
+        }
+        ApplyLawyerUpdates(newLawyer, lawyerUpdates);
+
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            _context.Lawyers.Update(newLawyer);
+
+            await RecordLogAsync("LAWYER_UPDATED", oldLawyer, newLawyer, editor);
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return newLawyer;
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Permanently removes a lawyer and their user data if no active cases exist.
+    /// </summary>
+    /// <summary>
+    /// Permanently removes a lawyer and their user data from the system.
+    /// </summary>
+    public async Task Delete(Guid id, Guid editorId)
+    {
+        var editor = await GetEditorAsync(editorId);
+
+        // Retrieve the lawyer to be deleted
+        var oldLawyer = await GetLawyerById(id);
+        if (oldLawyer == null) throw new KeyNotFoundException($"Lawyer {id} not found");
+
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            // Clean up related data before removal
+            await _processRepository.DissociateProcessesFromLawyer(id, editorId);
+
+            // Remove all associated phone records
+            DeleteUserPhones(oldLawyer.User);
+
+            // Record the deletion in audit logs
+            await RecordLogAsync("LAWYER_DELETED", oldLawyer, oldLawyer, editor);
+
+            // Remove PII linkage from historical logs
+            await AnonymizeUserLogByAffectedUserId(id);
+
+            // Remove main entities
+            _context.Lawyers.Remove(oldLawyer);
+            if (oldLawyer.User != null) _context.Users.Remove(oldLawyer.User);
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Removes all phone numbers associated with a specific user.
+    /// </summary>
+    private void DeleteUserPhones(User? user)
+    {
+        if (user?.Phones != null && user.Phones.Any())
+        {
+            _context.Phones.RemoveRange(user.Phones);
+        }
+    }
+
+    #endregion
+
+    #region Private Helper Methods (Alphabetical)
+
+    /// <summary>
+    /// Decouples logs from a deleted user for historical preservation without PII.
+    /// </summary>
+    private async Task AnonymizeUserLogByAffectedUserId(Guid userId)
+    {
+        await _context.UserLogs
+            .Where(ul => ul.AffectedUserID == userId)
+            .ExecuteUpdateAsync(s => s.SetProperty(ul => ul.AffectedUserID, (Guid?)null));
+    }
+
+    /// <summary>
+    /// Updates lawyer-specific properties.
+    /// </summary>
+    private void ApplyLawyerUpdates(Lawyer existingLawyer, Lawyer updates)
+    {
+        if (!string.IsNullOrWhiteSpace(updates.ProfessionalRegister))
+            existingLawyer.ProfessionalRegister = updates.ProfessionalRegister;
+    }
+
+    /// <summary>
+    /// Manages user phone contact updates, maintaining a single main phone.
+    /// </summary>
+    private void ApplyPhoneUpdates(User existingUser, ICollection<Phone> phoneUpdates)
+    {
+        var phoneUpd = phoneUpdates.First();
+        var existingMain = existingUser.Phones.FirstOrDefault(p => p.IsMain);
+
+        if (existingMain != null)
+            existingMain.Number = phoneUpd.Number ?? existingMain.Number;
+        else
+            existingUser.Phones.Add(new Phone { ID = Guid.NewGuid(), Number = phoneUpd.Number, CountryCode = 351, IsMain = true });
+    }
+
+    /// <summary>
+    /// Applies dynamic sorting to the lawyer query.
+    /// </summary>
+    private IQueryable<Lawyer> ApplySorting(IQueryable<Lawyer> query, string? sortBy, string? sortOrder)
+    {
+        sortOrder = sortOrder?.ToLower() ?? "asc";
+        return sortBy?.ToLower() switch
+        {
+            "nif" => sortOrder == "desc" ? query.OrderByDescending(l => l.User.NIF) : query.OrderBy(l => l.User.NIF),
+            "register" => sortOrder == "desc" ? query.OrderByDescending(l => l.ProfessionalRegister) : query.OrderBy(l => l.ProfessionalRegister),
+            _ => sortOrder == "desc" ? query.OrderByDescending(l => l.User.Name) : query.OrderBy(l => l.User.Name),
+        };
+    }
+
+    /// <summary>
+    /// Updates base user properties.
+    /// </summary>
+    private void ApplyUserUpdates(User existingUser, User updates, bool? isActive)
+    {
+        if (!string.IsNullOrWhiteSpace(updates.Name)) existingUser.Name = updates.Name;
+        if (!string.IsNullOrWhiteSpace(updates.Email)) existingUser.Email = updates.Email;
+        if (!string.IsNullOrWhiteSpace(updates.NIF)) existingUser.NIF = updates.NIF;
+        if (isActive.HasValue) existingUser.IsActive = isActive.Value;
+    }
+
+    /// <summary>
+    /// Retrieves the editor user or throws if not found.
+    /// </summary>
+    private async Task<User> GetEditorAsync(Guid editorId)
+    {
+        return await _context.Users.FindAsync(editorId) ?? throw new KeyNotFoundException($"Editor {editorId} not found");
+    }
+
+    /// <summary>
+    /// Records the audit log for lawyer operations with the exact requested signature.
+    /// </summary>
+    private async Task RecordLogAsync(string actionType, Lawyer oldLawyer, Lawyer newLawyer, User editor)
+    {
+        var actionLogType = await _context.ActionLogTypes.FirstAsync(alt => alt.Name == actionType);
+
+        // Serialize states to JSON elements
+        var oldValueWrapped = WrapLawyerToLog(oldLawyer, actionType);
+        var newValueWrapped = WrapLawyerToLog(newLawyer, actionType);
+
+        var log = new UserLog
+        {
+            ID = Guid.NewGuid(),
+            AffectedUserID = newLawyer.ID,
+            UpdatedByID = editor.ID,
+            ActionLogTypeID = actionLogType.ID,
+            OldValue = oldValueWrapped,
+            NewValue = newValueWrapped
+        };
+
+        _context.UserLogs.Add(log);
+    }
+
+    /// <summary>
+    /// Validates that at least one valid phone number is provided.
+    /// </summary>
+    private void ValidateLawyerPhone(ICollection<Phone>? phones)
+    {
+        if (phones == null || !phones.Any() || string.IsNullOrWhiteSpace(phones.First().Number))
+            throw new InvalidOperationException("A valid phone number is required.");
+    }
+
+    /// <summary>
+    /// Wraps lawyer entity data into a standardized JSON structure for logging.
+    /// </summary>
+    private JsonElement WrapLawyerToLog(Lawyer? lawyer, string actionType)
+    {
+        if (lawyer == null) return _emptyJson;
+
+        return JsonSerializer.SerializeToElement(new
+        {
+            action_type = actionType,
+            user_id = lawyer.User?.ID,
+            user_name = lawyer.User?.Name,
+            user_nif = lawyer.User?.NIF,
+            lawyer_id = lawyer.ID,
+            lawyer_register = lawyer.ProfessionalRegister,
+            status = lawyer.User?.IsActive
+        });
+    }
+
+    #endregion
 }

@@ -26,8 +26,7 @@ namespace Consilium.Domain.Models
         public Guid ClientId { get; set; }
 
         [Column("lawyer_id")]
-        [Required]
-        public Guid LawyerId { get; set; }
+        public Guid? LawyerId { get; set; }
 
         [Column("process_adverse_part_name")]
         [StringLength(255)]
@@ -77,7 +76,7 @@ namespace Consilium.Domain.Models
         public Client Client { get; set; } = null!;
 
         // Mapeia LawyerId (FK para LEGAL.LAWYER)
-        public Lawyer Lawyer { get; set; } = null!;
+        public Lawyer? Lawyer { get; set; }
 
         // Mapeia CreatedBy (FK para CORE.ADMIN)
         // Usando 'CreatedByAdmin' para evitar conflito com 'CreatedBy' (Guid)
