@@ -80,7 +80,7 @@ public static class MessageEndpoints
         [FromQuery] int page = 1,
         [FromQuery] int limit = 20)
     {
-        var process = await processRepo.GetById(processId);
+        var process = await processRepo.GetProcessById(processId);
         if (process == null)
             return Results.NotFound(new { message = $"Process with ID {processId} not found" });
 
@@ -139,7 +139,7 @@ public static class MessageEndpoints
         IUserRepository userRepo)
     {
         // Validate that the process exists
-        var process = await processRepo.GetById(request.ProcessId);
+        var process = await processRepo.GetProcessById(request.ProcessId);
         if (process == null)
             return Results.BadRequest(new { message = $"Process with ID {request.ProcessId} not found" });
 

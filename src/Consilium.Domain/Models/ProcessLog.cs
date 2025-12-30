@@ -7,9 +7,6 @@ namespace Consilium.Domain.Models
     [Table("process_log", Schema = "legal")]
     public class ProcessLog
     {
-        #region Table Columns
-        // Database columns mapping exactly to the legal.process_log table.
-
         [Key]
         [Column("process_log_id")]
         public Guid ID { get; set; }
@@ -22,9 +19,11 @@ namespace Consilium.Domain.Models
         [Required]
         public Guid UpdatedByID { get; set; }
 
+
+        // Database-generated timestamp. The private set prevents manual assignment in C# code.
         [Column("updated_at")]
-        [Required]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public DateTime UpdatedAt { get; private set; }
 
         [Column("old_value", TypeName = "jsonb")]
         [Required]
@@ -37,12 +36,8 @@ namespace Consilium.Domain.Models
         [Column("action_log_type_id")]
         [Required]
         public int ActionLogTypeID { get; set; }
-        #endregion
 
         #region Navigation Properties
-        // Object-Relational Mapping (ORM) navigation properties.
-        // Enables traversal between the Audit Log and its related domain entities.
-
         [ForeignKey("ProcessID")]
         public virtual Process Process { get; set; } = null!;
 

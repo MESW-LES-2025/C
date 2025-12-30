@@ -14,7 +14,8 @@ public static class ProcessEndpoints
     #region Route Mapping
 
     /// <summary>
-    /// Registers process-related routes and applies security policies.
+    /// Registers all process-related endpoints and applies authorization policies.
+    /// Ensures compliance with existing frontend route expectations.
     /// </summary>
     public static void MapProcessEndpoints(this WebApplication app)
     {
@@ -26,15 +27,14 @@ public static class ProcessEndpoints
         group.MapGet("/lawyer/{lawyerId:guid}", GetProcessesByLawyer).WithName("GetProcessesByLawyer").RequireAuthorization("AdminOrLawyer");
         group.MapGet("/lawyer/{lawyerId:guid}/with-documents", GetProcessesByLawyerWithDocuments).WithName("GetProcessesByLawyerWithDocuments").RequireAuthorization("AdminOrLawyer");
 
-
-        // Management operations for creating, updating and removing legal processes.
+        // Management operations
         group.MapPost("/", CreateProcess).WithName("CreateProcess").RequireAuthorization("AdminOrLawyer");
         group.MapPost("/with-documents", CreateProcessWithDocuments).WithName("CreateProcessWithDocuments").RequireAuthorization("AdminOrLawyer");
         group.MapPatch("/{id:guid}", UpdateProcess).WithName("UpdateProcess").RequireAuthorization("AdminOrLawyer");
         group.MapPatch("/{id:guid}/with-documents", UpdateProcessWithDocuments).WithName("UpdateProcessWithDocuments").RequireAuthorization("AdminOrLawyer");
         group.MapDelete("/{id:guid}", DeleteProcess).WithName("DeleteProcess").RequireAuthorization("AdminOrLawyer");
 
-        // General Access (Clients or Assigned Parties)
+        // General Access
         group.MapGet("/{id:guid}/with-documents", GetProcessByIdWithDocuments).WithName("GetProcessByIdWithDocuments").RequireAuthorization("Any");
         group.MapGet("/client/{clientId:guid}", GetProcessesByClient).WithName("GetProcessesByClient").RequireAuthorization("Any");
         group.MapGet("/client/{clientId:guid}/with-documents", GetProcessesByClientWithDocuments).WithName("GetProcessesByClientWithDocuments").RequireAuthorization("Any");
@@ -45,9 +45,15 @@ public static class ProcessEndpoints
     #region Queries (Read Operations)
 
     /// <summary>
-    /// Fetches all processes with pagination and filtering support.
+    /// Retrieves a paginated list of all processes.
     /// </summary>
-    private static async Task<IResult> GetAllProcesses(IProcessRepository repo, [FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int limit = 20, [FromQuery] string? sortBy = "name", [FromQuery] string? sortOrder = "asc")
+    private static async Task<IResult> GetAllProcesses(
+        IProcessRepository repo,
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 20,
+        [FromQuery] string? sortBy = "name",
+        [FromQuery] string? sortOrder = "asc")
     {
         try
         {
@@ -56,62 +62,79 @@ public static class ProcessEndpoints
         }
         catch (PostgresException)
         {
-            // Fail-safe for initial database setup or inaccessible tables
             return Results.Ok(new { data = Array.Empty<object>(), meta = new { totalCount = 0, page, limit } });
         }
     }
 
     /// <summary>
-    /// Retrieves a specific process by its unique identifier.
+    /// Retrieves process details by ID. Triggers a read audit log.
     /// </summary>
-    private static async Task<IResult> GetProcessById(Guid id, IProcessRepository repo)
+    private static async Task<IResult> GetProcessById(Guid id, IProcessRepository repo, ClaimsPrincipal userClaims)
     {
-        var process = await repo.GetById(id);
-        return process == null ? Results.NotFound(new { message = $"Process {id} not found" }) : Results.Ok(MapToResponse(process));
+        var editorId = GetUserIdFromClaims(userClaims);
+        var process = await repo.GetProcessDetailById(id, editorId);
+
+        return process == null
+            ? Results.NotFound(new { message = $"Process {id} not found" })
+            : Results.Ok(MapToResponse(process));
     }
 
     /// <summary>
-    /// Retrieves a specific process including its document list.
+    /// Retrieves process details including document metadata. Triggers a read audit log.
     /// </summary>
-    private static async Task<IResult> GetProcessByIdWithDocuments(Guid id, IProcessRepository repo)
+    private static async Task<IResult> GetProcessByIdWithDocuments(Guid id, IProcessRepository repo, ClaimsPrincipal userClaims)
     {
-        var process = await repo.GetById(id);
-        return process == null ? Results.NotFound(new { message = $"Process {id} not found" }) : Results.Ok(MapWithDocsToResponse(process));
+        var editorId = GetUserIdFromClaims(userClaims);
+        var process = await repo.GetProcessDetailById(id, editorId);
+
+        return process == null
+            ? Results.NotFound(new { message = $"Process {id} not found" })
+            : Results.Ok(MapWithDocsToResponse(process));
     }
 
     /// <summary>
-    /// Retrieves all processes belonging to a client.
+    /// Fetches paginated processes for a specific client.
     /// </summary>
-    private static async Task<IResult> GetProcessesByClient(Guid clientId, IProcessRepository repo, [FromQuery] string? search, int page = 1, int limit = 20)
+    private static async Task<IResult> GetProcessesByClient(
+        Guid clientId,
+        IProcessRepository repo,
+        [FromQuery] string? search,
+        int page = 1,
+        int limit = 20)
     {
         var (processes, totalCount) = await repo.GetProcessesByClientId(clientId, search, page, limit, "name", "asc");
         return Results.Ok(new { data = processes.Select(MapToResponse), meta = new { totalCount, page, limit } });
     }
 
     /// <summary>
-    /// Retrieves all processes and documents belonging to a client.
+    /// Retrieves all client processes including associated documents.
     /// </summary>
     private static async Task<IResult> GetProcessesByClientWithDocuments(Guid clientId, IProcessRepository repo)
     {
-        var processes = await repo.GetProcessesByClientIdWithDocuments(clientId);
+        var processes = await repo.GetProcessesByClient(clientId, includeDocuments: true);
         return Results.Ok(new { data = processes.Select(MapWithDocsToResponse) });
     }
 
     /// <summary>
-    /// Retrieves all processes assigned to a lawyer.
+    /// Fetches paginated processes for a specific lawyer.
     /// </summary>
-    private static async Task<IResult> GetProcessesByLawyer(Guid lawyerId, IProcessRepository repo, [FromQuery] string? search, int page = 1, int limit = 20)
+    private static async Task<IResult> GetProcessesByLawyer(
+        Guid lawyerId,
+        IProcessRepository repo,
+        [FromQuery] string? search,
+        int page = 1,
+        int limit = 20)
     {
         var (processes, totalCount) = await repo.GetProcessesByLawyerId(lawyerId, search, page, limit, "name", "asc");
         return Results.Ok(new { data = processes.Select(MapToResponse), meta = new { totalCount, page, limit } });
     }
 
     /// <summary>
-    /// Retrieves all processes and documents assigned to a lawyer.
+    /// Retrieves all lawyer processes including associated documents.
     /// </summary>
     private static async Task<IResult> GetProcessesByLawyerWithDocuments(Guid lawyerId, IProcessRepository repo)
     {
-        var processes = await repo.GetProcessesByLawyerIdWithDocuments(lawyerId);
+        var processes = await repo.GetProcessesByLawyer(lawyerId, includeDocuments: true);
         return Results.Ok(new { data = processes.Select(MapWithDocsToResponse) });
     }
 
@@ -120,190 +143,224 @@ public static class ProcessEndpoints
     #region Commands (Write Operations)
 
     /// <summary>
-    /// Creates a new legal process.
+    /// Creates a new process with validated relational integrity.
     /// </summary>
-    private static async Task<IResult> CreateProcess(CreateProcessRequest request, IProcessRepository repo, IClientRepository clientRepo, ILawyerRepository lawyerRepo, AppDbContext db, HttpContext context)
+    private static async Task<IResult> CreateProcess(
+        CreateProcessRequest request,
+        IProcessRepository repo,
+        IClientRepository clientRepo,
+        ILawyerRepository lawyerRepo,
+        ClaimsPrincipal userClaims)
     {
-        var (process, error) = await ValidateAndMapProcess(request, clientRepo, lawyerRepo, db, GetEditorId(context));
-        if (error != null) return error;
+        var errorMessage = await ValidateClientAndLawyer(request.ClientId, request.LawyerId, clientRepo, lawyerRepo);
+        if (errorMessage != null) return Results.BadRequest(new { message = errorMessage });
 
-        return await SaveAndReturnCreated(process!, repo);
+        var editorId = GetUserIdFromClaims(userClaims);
+        if (editorId == Guid.Empty) return Results.Unauthorized();
+
+        var process = MapToEntity(request);
+        var created = await repo.Create(process, editorId);
+
+        return Results.Created($"/api/processes/{created.Id}", MapToResponse(created));
     }
 
     /// <summary>
-    /// Creates a process with associated files using multi-part form data.
+    /// Creates a process and handles multi-part document uploads.
     /// </summary>
-    private static async Task<IResult> CreateProcessWithDocuments([FromForm] CreateProcessWithDocumentsRequest request, IProcessRepository repo, IClientRepository clientRepo, ILawyerRepository lawyerRepo, AppDbContext db, HttpContext context)
+    private static async Task<IResult> CreateProcessWithDocuments(
+        [FromForm] CreateProcessRequest request,
+        IFormFileCollection files,
+        IProcessRepository repo,
+        IClientRepository clientRepo,
+        ILawyerRepository lawyerRepo,
+        ClaimsPrincipal userClaims)
     {
-        // 1. DTO Construction for form-data compatibility
-        var createDto = new CreateProcessRequest(
-            Name: request.Name ?? "",
-            Number: request.Number,
-            ClientId: request.ClientId,
-            LawyerId: request.LawyerId,
-            ProcessTypePhaseId: request.ProcessTypePhaseId,
-            ProcessStatusId: request.ProcessStatusId,
-            NextHearingDate: request.NextHearingDate,
-            AdversePartName: request.AdversePartName,
-            OpposingCounselName: request.OpposingCounselName,
-            Priority: request.Priority,
-            CourtInfo: request.CourtInfo,
-            Description: request.Description
-        );
+        var errorMessage = await ValidateClientAndLawyer(request.ClientId, request.LawyerId, clientRepo, lawyerRepo);
+        if (errorMessage != null) return Results.BadRequest(new { message = errorMessage });
 
-        // 2. Validation and Mapping
-        var (process, error) = await ValidateAndMapProcess(createDto, clientRepo, lawyerRepo, db, GetEditorId(context));
-        if (error != null) return error;
+        var editorId = GetUserIdFromClaims(userClaims);
+        if (editorId == Guid.Empty) return Results.Unauthorized();
 
-        // 3. Document attachment
-        if (request.Files?.Any() == true) await HandleFileUploads(process!, request.Files);
+        var process = MapToEntity(request);
+        if (files.Any()) await HandleFileUploads(process, files);
 
-        return await SaveAndReturnCreated(process!, repo);
+        var created = await repo.Create(process, editorId);
+        return Results.Created($"/api/processes/{created.Id}", MapToResponse(created));
     }
 
     /// <summary>
-    /// Updates process metadata.
+    /// Updates process metadata and records change delta.
     /// </summary>
-    private static async Task<IResult> UpdateProcess(Guid id, UpdateProcessRequest request, IProcessRepository repo, AppDbContext db, IClientRepository clientRepo, ILawyerRepository lawyerRepo, HttpContext context)
+    private static async Task<IResult> UpdateProcess(
+        Guid id,
+        UpdateProcessRequest request,
+        IProcessRepository repo,
+        ClaimsPrincipal userClaims)
     {
-        var existing = await repo.GetById(id);
-        if (existing == null) return Results.NotFound(new { message = $"Process {id} not found" });
+        var editorId = GetUserIdFromClaims(userClaims);
+        if (editorId == Guid.Empty) return Results.Unauthorized();
 
-        var error = await ApplyUpdatesToProcess(existing, request, clientRepo, lawyerRepo, GetEditorId(context));
-        if (error != null) return error;
+        var process = await repo.GetProcessById(id);
+        if (process == null) return Results.NotFound(new { message = $"Process {id} not found" });
 
-        await repo.Update(existing);
-        return Results.Ok(MapToResponse(existing));
+        ApplyChanges(process, request);
+        await repo.Update(process, editorId);
+
+        return Results.Ok(MapToResponse(process));
     }
 
     /// <summary>
-    /// Updates process data and manages document syncing (Add/Remove).
+    /// Updates process data and synchronizes document collection.
     /// </summary>
-    private static async Task<IResult> UpdateProcessWithDocuments(Guid id, [FromForm] UpdateProcessWithDocumentsRequest request, IProcessRepository repo, AppDbContext db, IClientRepository clientRepo, ILawyerRepository lawyerRepo, HttpContext context)
+    private static async Task<IResult> UpdateProcessWithDocuments(
+        Guid id,
+        [FromForm] UpdateProcessRequest request,
+        IFormFileCollection files,
+        HttpContext context,
+        IProcessRepository repo,
+        AppDbContext db,
+        ClaimsPrincipal userClaims)
     {
-        var existing = await repo.GetById(id);
-        if (existing == null) return Results.NotFound(new { message = $"Process {id} not found" });
+        var editorId = GetUserIdFromClaims(userClaims);
+        if (editorId == Guid.Empty) return Results.Unauthorized();
 
-        // 1. Handle Document Deletions
-        if (request.DeletedDocumentIds?.Any() == true)
+        var process = await repo.GetProcessById(id);
+        if (process == null) return Results.NotFound(new { message = $"Process {id} not found" });
+
+        var deletedDocumentIds = context.Request.Form["deletedDocumentIds"].ToArray();
+        if (deletedDocumentIds?.Length > 0)
         {
-            var guidIds = request.DeletedDocumentIds.Select(x => Guid.TryParse(x, out var g) ? g : Guid.Empty).Where(g => g != Guid.Empty);
-            await HandleFileDeletions(existing.Id, guidIds, db);
+            var guidIds = deletedDocumentIds
+                .Select(x => Guid.TryParse(x, out var g) ? g : Guid.Empty)
+                .Where(g => g != Guid.Empty);
+
+            await HandleFileDeletions(process.Id, guidIds, db);
         }
 
-        // 2. Manual parsing for form-data update
-        var updateDto = new UpdateProcessRequest(
-            Name: request.Name,
-            Number: request.Number,
-            ClientId: request.ClientId != null ? Guid.Parse(request.ClientId) : null,
-            LawyerId: request.LawyerId != null ? Guid.Parse(request.LawyerId) : null,
-            ProcessTypePhaseId: request.ProcessTypePhaseId != null ? int.Parse(request.ProcessTypePhaseId) : null,
-            ProcessStatusId: request.ProcessStatusId != null ? int.Parse(request.ProcessStatusId) : null,
-            NextHearingDate: request.NextHearingDate != null ? DateTime.Parse(request.NextHearingDate) : null,
-            ClosedAt: request.ClosedAt != null ? DateTime.Parse(request.ClosedAt) : null,
-            AdversePartName: request.AdversePartName,
-            OpposingCounselName: request.OpposingCounselName,
-            Priority: request.Priority != null ? short.Parse(request.Priority) : null,
-            CourtInfo: request.CourtInfo,
-            Description: request.Description
-        );
-
-        // 3. Apply updates and handle new uploads
-        var error = await ApplyUpdatesToProcess(existing, updateDto, clientRepo, lawyerRepo, GetEditorId(context));
-        if (error != null) return error;
-
-        if (request.Files?.Any() == true) await HandleFileUploads(existing, request.Files, db);
+        ApplyChanges(process, request);
+        if (files.Any()) await HandleFileUploads(process, files, db);
 
         await db.SaveChangesAsync();
-        return Results.Ok(MapWithDocsToResponse(existing));
+        await repo.Update(process, editorId);
+
+        return Results.Ok(MapWithDocsToResponse(process));
     }
 
     /// <summary>
-    /// Deletes a process record.
+    /// Permanently removes a process and logs the final state before deletion.
     /// </summary>
-    private static async Task<IResult> DeleteProcess(Guid id, IProcessRepository repo)
+    private static async Task<IResult> DeleteProcess(Guid id, IProcessRepository repo, ClaimsPrincipal userClaims)
     {
-        try
-        {
-            var existing = await repo.GetById(id);
-            if (existing == null) return Results.NotFound();
+        var editorId = GetUserIdFromClaims(userClaims);
+        if (editorId == Guid.Empty) return Results.Unauthorized();
 
-            await repo.Delete(id);
-            return Results.NoContent();
-        }
-        catch { return Results.BadRequest(new { message = "Error deleting process. Ensure it has no linked records." }); }
+        var process = await repo.GetProcessById(id);
+        if (process == null) return Results.NotFound(new { message = $"Process {id} not found" });
+
+        await repo.Delete(id, editorId);
+        return Results.NoContent();
     }
 
     #endregion
 
-    #region Private Helpers & Mappers
+    #region Response Mappers
 
-    private static Guid GetEditorId(HttpContext context)
+    private static ProcessResponse MapToResponse(Process p) => new(
+        ProcessId: p.Id,
+        Name: p.Name,
+        Number: p.Number,
+        ClientId: p.ClientId,
+        ClientName: p.Client?.User?.Name ?? "Unknown",
+        LawyerId: p.LawyerId ?? Guid.Empty,
+        LawyerName: p.Lawyer?.User?.Name ?? "Unassigned",
+        AdversePartName: p.AdversePartName,
+        OpposingCounselName: p.OpposingCounselName,
+        CreatedAt: p.CreatedAt,
+        ClosedAt: p.ClosedAt,
+        Priority: p.Priority,
+        CourtInfo: p.CourtInfo,
+        ProcessTypePhaseId: p.ProcessTypePhaseId,
+        ProcessStatusId: p.ProcessStatusId,
+        Description: p.Description,
+        NextHearingDate: p.NextHearingDate
+    );
+
+    private static ProcessWithDocumentsResponse MapWithDocsToResponse(Process p)
     {
-        var claim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+        var baseInfo = MapToResponse(p);
+        var docs = p.Documents?.Select(d => new DocumentResponse(
+            DocumentId: d.Id,
+            FileName: d.FileName,
+            FileMimeType: d.FileMimeType,
+            FileSize: d.FileSize,
+            CreatedAt: d.CreatedAt,
+            DownloadUrl: $"/api/documents/{d.Id}/download"
+        )).ToList() ?? new List<DocumentResponse>();
+
+        return new ProcessWithDocumentsResponse(
+            baseInfo.ProcessId, baseInfo.Name, baseInfo.Number, baseInfo.ClientId, baseInfo.ClientName,
+            baseInfo.LawyerId, baseInfo.LawyerName, baseInfo.AdversePartName, baseInfo.OpposingCounselName,
+            baseInfo.CreatedAt, baseInfo.ClosedAt, baseInfo.Priority, baseInfo.CourtInfo,
+            baseInfo.ProcessTypePhaseId, baseInfo.ProcessStatusId, baseInfo.Description,
+            baseInfo.NextHearingDate, docs
+        );
     }
 
-    private static async Task<(Process? Process, IResult? Error)> ValidateAndMapProcess(CreateProcessRequest req, IClientRepository clientRepo, ILawyerRepository lawyerRepo, AppDbContext db, Guid editorId)
+    #endregion
+
+    #region Inbound Mappers
+
+    private static Process MapToEntity(CreateProcessRequest req) => new()
     {
-        // 1. Mandatory Data Validation
-        if (string.IsNullOrWhiteSpace(req.Name)) return (null, Results.BadRequest("Process name is required"));
+        Name = req.Name,
+        Number = req.Number,
+        ClientId = req.ClientId,
+        LawyerId = req.LawyerId,
+        Priority = req.Priority,
+        CourtInfo = req.CourtInfo,
+        ProcessTypePhaseId = req.ProcessTypePhaseId,
+        ProcessStatusId = req.ProcessStatusId,
+        Description = req.Description ?? string.Empty,
+        AdversePartName = req.AdversePartName,
+        OpposingCounselName = req.OpposingCounselName,
+        NextHearingDate = req.NextHearingDate?.ToUniversalTime()
+    };
 
-        // 2. Foreign Key Check
-        var lawyer = await lawyerRepo.GetLawyerById(req.LawyerId);
-        if (lawyer == null) return (null, Results.BadRequest("Lawyer not found"));
-
-        var client = await clientRepo.GetById(req.ClientId);
-        if (client == null) return (null, Results.BadRequest("Client not found"));
-
-        // 3. Entity Mapping
-        var process = new Process
-        {
-            Id = Guid.NewGuid(),
-            Name = req.Name,
-            Number = req.Number ?? "",
-            ClientId = req.ClientId,
-            LawyerId = req.LawyerId,
-            Priority = req.Priority,
-            ProcessTypePhaseId = req.ProcessTypePhaseId,
-            ProcessStatusId = req.ProcessStatusId,
-            NextHearingDate = req.NextHearingDate?.ToUniversalTime() // DB timestamp sync
-        };
-        return (process, null);
-    }
-
-    private static async Task<IResult?> ApplyUpdatesToProcess(Process existing, UpdateProcessRequest req, IClientRepository clientRepo, ILawyerRepository lawyerRepo, Guid editorId)
+    private static void ApplyChanges(Process existing, UpdateProcessRequest req)
     {
-        // 1. Basic Fields Update
-        if (!string.IsNullOrWhiteSpace(req.Name)) existing.Name = req.Name;
-
-        // 2. Entity Relations Update
-        if (req.ClientId.HasValue && await clientRepo.GetById(req.ClientId.Value) != null)
-            existing.ClientId = req.ClientId.Value;
-
-        if (req.LawyerId.HasValue)
-        {
-            if (await lawyerRepo.GetLawyerById(req.LawyerId.Value) != null) existing.LawyerId = req.LawyerId.Value;
-            else return Results.BadRequest("Lawyer not found");
-        }
-
-        // 3. Status and Date Sync (UTC)
-        if (req.NextHearingDate.HasValue) existing.NextHearingDate = req.NextHearingDate.Value.ToUniversalTime();
-        if (req.ClosedAt.HasValue) existing.ClosedAt = req.ClosedAt.Value.ToUniversalTime();
-
-        if (req.ProcessStatusId.HasValue) existing.ProcessStatusId = req.ProcessStatusId.Value;
-        if (req.ProcessTypePhaseId.HasValue) existing.ProcessTypePhaseId = req.ProcessTypePhaseId.Value;
-        if (req.Priority.HasValue) existing.Priority = req.Priority.Value;
-
+        existing.Name = !string.IsNullOrWhiteSpace(req.Name) ? req.Name : existing.Name;
+        existing.ClientId = req.ClientId ?? existing.ClientId;
+        existing.LawyerId = req.LawyerId ?? existing.LawyerId;
+        existing.ProcessStatusId = req.ProcessStatusId ?? existing.ProcessStatusId;
+        existing.ProcessTypePhaseId = req.ProcessTypePhaseId ?? existing.ProcessTypePhaseId;
+        existing.Priority = req.Priority ?? existing.Priority;
+        existing.NextHearingDate = req.NextHearingDate?.ToUniversalTime() ?? existing.NextHearingDate;
+        existing.ClosedAt = req.ClosedAt?.ToUniversalTime() ?? existing.ClosedAt;
         existing.Description = req.Description ?? existing.Description;
         existing.CourtInfo = req.CourtInfo ?? existing.CourtInfo;
+        existing.AdversePartName = req.AdversePartName ?? existing.AdversePartName;
+        existing.OpposingCounselName = req.OpposingCounselName ?? existing.OpposingCounselName;
+    }
 
+    #endregion
+
+    #region Private Helpers
+
+    private static async Task<string?> ValidateClientAndLawyer(Guid clientId, Guid lawyerId, IClientRepository clientRepo, ILawyerRepository lawyerRepo)
+    {
+        if (await clientRepo.GetById(clientId) == null) return "Client not found";
+        if (await lawyerRepo.GetLawyerById(lawyerId) == null) return "Lawyer not found";
         return null;
+    }
+
+    private static Guid GetUserIdFromClaims(ClaimsPrincipal user)
+    {
+        var claim = user.FindFirst("user_id")?.Value;
+        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
     }
 
     private static async Task HandleFileUploads(Process process, IFormFileCollection files, AppDbContext? db = null)
     {
-        // Iterates through uploaded files, converting to byte arrays
         foreach (var file in files)
         {
             using var ms = new MemoryStream();
@@ -326,67 +383,12 @@ public static class ProcessEndpoints
 
     private static async Task HandleFileDeletions(Guid processId, IEnumerable<Guid> docIds, AppDbContext db)
     {
-        // Removes specific documents associated with the process
         foreach (var id in docIds)
         {
             var doc = await db.Documents.FirstOrDefaultAsync(d => d.Id == id && d.ProcessId == processId);
             if (doc != null) db.Documents.Remove(doc);
         }
     }
-
-    private static async Task<IResult> SaveAndReturnCreated(Process process, IProcessRepository repo)
-    {
-        var created = await repo.Create(process);
-        return Results.Created($"/api/processes/{created.Id}", MapToResponse(created));
-    }
-
-    private static ProcessResponse MapToResponse(Process p) => new(
-        ProcessId: p.Id,
-        Name: p.Name,
-        Number: p.Number,
-        ClientId: p.ClientId,
-        ClientName: p.Client?.User?.Name ?? "Unknown",
-        LawyerId: p.LawyerId ?? Guid.Empty,
-        LawyerName: p.Lawyer?.User?.Name ?? "Unassigned",
-        AdversePartName: p.AdversePartName,
-        OpposingCounselName: p.OpposingCounselName,
-        CreatedAt: p.CreatedAt,
-        ClosedAt: p.ClosedAt,
-        Priority: p.Priority,
-        CourtInfo: p.CourtInfo,
-        ProcessTypePhaseId: p.ProcessTypePhaseId,
-        ProcessStatusId: p.ProcessStatusId,
-        Description: p.Description,
-        NextHearingDate: p.NextHearingDate
-    );
-
-    private static ProcessWithDocumentsResponse MapWithDocsToResponse(Process p) => new(
-        ProcessId: p.Id,
-        Name: p.Name,
-        Number: p.Number,
-        ClientId: p.ClientId,
-        ClientName: p.Client?.User?.Name ?? "Unknown",
-        LawyerId: p.LawyerId ?? Guid.Empty,
-        LawyerName: p.Lawyer?.User?.Name ?? "Unassigned",
-        AdversePartName: p.AdversePartName,
-        OpposingCounselName: p.OpposingCounselName,
-        CreatedAt: p.CreatedAt,
-        ClosedAt: p.ClosedAt,
-        Priority: p.Priority,
-        CourtInfo: p.CourtInfo,
-        ProcessTypePhaseId: p.ProcessTypePhaseId,
-        ProcessStatusId: p.ProcessStatusId,
-        Description: p.Description,
-        NextHearingDate: p.NextHearingDate,
-        Documents: p.Documents?.Select(d => new DocumentResponse(
-            DocumentId: d.Id,
-            FileName: d.FileName,
-            FileMimeType: d.FileMimeType,
-            FileSize: d.FileSize,
-            CreatedAt: d.CreatedAt,
-            DownloadUrl: $"/api/documents/{d.Id}/download"
-        )).ToList() ?? new List<DocumentResponse>()
-    );
 
     #endregion
 }
